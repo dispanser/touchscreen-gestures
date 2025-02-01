@@ -2,16 +2,16 @@ use std::collections::HashMap;
 
 use crate::{accel::Orientation, error::Result};
 use log::debug;
-use xrandr::{Output, Rotation, XHandle};
+use xrandr::{Rotation, XHandle};
 
-struct DisplayHander {
-    xhandle: XHandle,
-    base_orientation: Orientation,
+pub struct DisplayHander {
+    pub xhandle: XHandle,
+    pub base_orientation: Orientation,
 }
 
-struct DisplayMatch {
-    width: i32,
-    height: i32,
+pub struct DisplayMatch {
+    pub width: i32,
+    pub height: i32,
 }
 
 impl DisplayHander {
@@ -25,8 +25,8 @@ impl DisplayHander {
 
     /// Auto-configure screen. Hardcoded for my setup, not applicable to anyone
     pub fn auto(&mut self) -> Result<()> {
-        let active_monitors = self.xhandle.monitors()?;
-        let outputs_by_name: HashMap<_, _> = self
+        let _active_monitors = self.xhandle.monitors()?;
+        let _outputs_by_name: HashMap<_, _> = self
             .xhandle
             .all_outputs()?
             .into_iter()

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use touchscreen_gestures::actions::{Action, KeySequence};
+use touchscreen_gestures::actions::{keyboard::KeySequence, Action};
 
 use crate::touch::classifier::{Direction::*, FingerPattern::*, Gesture, Size::*};
 

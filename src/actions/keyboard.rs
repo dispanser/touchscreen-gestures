@@ -1,141 +1,15 @@
-use crate::error::keyboard_init_failed;
-use std::{process::Command, time::Duration};
+use std::collections::HashSet;
+use std::time::Duration;
 
-use super::error::{KeySequenceError, Result};
+use crate::error::keyboard_init_failed;
+use crate::error::{KeySequenceError, Result};
+
 use evdev::{
     uinput::{VirtualDevice, VirtualDeviceBuilder},
     AttributeSet, KeyCode, KeyEvent,
 };
-use std::collections::HashSet;
 
-pub struct ActionHandler {
-    keyboard: Keyboard,
-}
-
-impl ActionHandler {
-    pub fn new() -> Result<Self> {
-        let keyboard = Keyboard::new()?;
-        Ok(Self { keyboard })
-    }
-
-    pub fn run(&mut self, action: &Action) {
-        match action {
-            Action::KeySeq(keys) => self.keyboard.press_sequence(keys),
-            Action::Script(args) => {
-                let cmd = &args[0];
-                let _child = Command::new(cmd).args(args[1..].iter()).spawn();
-                log::info!("running {} with {:?}", args[0], &args[1..])
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::error::GesturesError;
-
-    #[test]
-    fn test_basic_key_sequence() -> Result<()> {
-        let seq = KeySequence::default().parse_step("- a")?;
-
-        assert_eq!(seq.steps.len(), 1);
-        assert!(seq.steps[0].modifiers.is_empty());
-        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_A]);
-        Ok(())
-    }
-
-    #[test]
-    fn test_single_modifier() -> Result<()> {
-        let seq = KeySequence::default().parse_step("ctrl - x")?;
-
-        assert_eq!(seq.steps.len(), 1);
-        assert_eq!(seq.steps[0].modifiers.len(), 1);
-        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTCTRL));
-        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_X]);
-        Ok(())
-    }
-
-    #[test]
-    fn test_multiple_modifiers() -> Result<()> {
-        let seq = KeySequence::default().parse_step("lctrl + lalt - delete")?;
-
-        assert_eq!(seq.steps.len(), 1);
-        assert_eq!(seq.steps[0].modifiers.len(), 2);
-        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTCTRL));
-        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTALT));
-        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_DELETE]);
-        Ok(())
-    }
-
-    #[test]
-    fn test_multiple_steps() -> Result<()> {
-        let seq = KeySequence::default()
-            .parse_step("shift - a")?
-            .parse_step("ctrl + alt - delete")?;
-
-        assert_eq!(seq.steps.len(), 2);
-
-        // First step
-        assert_eq!(seq.steps[0].modifiers.len(), 1);
-        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTSHIFT));
-        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_A]);
-
-        // Second step
-        assert_eq!(seq.steps[1].modifiers.len(), 2);
-        assert!(seq.steps[1].modifiers.contains(&KeyCode::KEY_LEFTCTRL));
-        assert!(seq.steps[1].modifiers.contains(&KeyCode::KEY_LEFTALT));
-        assert_eq!(seq.steps[1].keys, vec![KeyCode::KEY_DELETE]);
-        Ok(())
-    }
-
-    #[test]
-    fn test_special_keys() -> Result<()> {
-        let seq = KeySequence::default()
-            .parse_step("- escape")?
-            .parse_step("- f11")?
-            .parse_step("- pageup")?;
-
-        assert_eq!(seq.steps.len(), 3);
-        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_ESC]);
-        assert_eq!(seq.steps[1].keys, vec![KeyCode::KEY_F11]);
-        assert_eq!(seq.steps[2].keys, vec![KeyCode::KEY_PAGEUP]);
-        Ok(())
-    }
-
-    #[test]
-    fn test_error_invalid_format() {
-        let result = KeySequence::default().parse_step("ctrl + alt delete");
-        assert!(matches!(
-            result,
-            Err(GesturesError::KeySequenceInvalid(
-                KeySequenceError::InvalidFormat
-            ))
-        ));
-    }
-
-    #[test]
-    fn test_error_unknown_modifier() {
-        let result = KeySequence::default().parse_step("invalid + ctrl - a");
-        assert!(matches!(
-            result,
-            Err(GesturesError::KeySequenceInvalid(
-                KeySequenceError::UnknownModifier(_)
-            ))
-        ));
-    }
-
-    #[test]
-    fn test_error_unknown_key() {
-        let result = KeySequence::default().parse_step("ctrl - invalid");
-        assert!(matches!(
-            result,
-            Err(GesturesError::KeySequenceInvalid(
-                KeySequenceError::UnknownKey(_)
-            ))
-        ));
-    }
-}
+pub type KeyResult<T> = std::result::Result<T, KeySequenceError>;
 
 pub struct Keyboard {
     device: VirtualDevice,
@@ -220,10 +94,10 @@ struct KeyStep {
 
 impl KeyStep {
     /// Parse a key combination string like "lctrl + lalt - a" or "shift - b"
-    pub fn parse(input: &str) -> Result<Self> {
+    pub fn parse(input: &str) -> KeyResult<Self> {
         let parts: Vec<&str> = input.split('-').collect();
         if parts.len() != 2 {
-            return Err(KeySequenceError::InvalidFormat.into());
+            return Err(KeySequenceError::InvalidFormat);
         }
 
         let key_part = parts[1].trim();
@@ -240,7 +114,7 @@ impl KeyStep {
                 .split('+')
                 .map(str::trim)
                 .map(Self::parse_modifier)
-                .collect::<Result<HashSet<_>>>()?
+                .collect::<KeyResult<HashSet<_>>>()?
         };
 
         Ok(Self {
@@ -249,7 +123,7 @@ impl KeyStep {
         })
     }
 
-    fn parse_modifier(modifier: &str) -> Result<KeyCode> {
+    fn parse_modifier(modifier: &str) -> KeyResult<KeyCode> {
         match modifier.to_lowercase().as_str() {
             "shift" => Ok(KeyCode::KEY_LEFTSHIFT),
             "lshift" => Ok(KeyCode::KEY_LEFTSHIFT),
@@ -261,11 +135,11 @@ impl KeyStep {
             "lalt" => Ok(KeyCode::KEY_LEFTALT),
             "ralt" => Ok(KeyCode::KEY_RIGHTALT),
             "menu" => Ok(KeyCode::KEY_MENU),
-            _ => Err(KeySequenceError::UnknownModifier(modifier.to_string()).into()),
+            _ => Err(KeySequenceError::UnknownModifier(modifier.to_string())),
         }
     }
 
-    fn parse_key(key: &str) -> Result<KeyCode> {
+    fn parse_key(key: &str) -> KeyResult<KeyCode> {
         match key.to_lowercase().as_str() {
             // Letters
             "a" => Ok(KeyCode::KEY_A),
@@ -353,14 +227,14 @@ impl KeyStep {
             "=" | "equals" => Ok(KeyCode::KEY_EQUAL),
             "`" | "grave" => Ok(KeyCode::KEY_GRAVE),
 
-            _ => Err(KeySequenceError::UnknownKey(key.to_string()).into()),
+            _ => Err(KeySequenceError::UnknownKey(key.to_string())),
         }
     }
 }
 
 impl KeySequence {
     /// Parse a string into a KeyStep and add it to the sequence
-    pub fn parse_step(self, input: &str) -> Result<Self> {
+    pub fn parse_step(self, input: &str) -> KeyResult<Self> {
         let step = KeyStep::parse(input)?;
         Ok(self.add_step_owned(step))
     }
@@ -391,8 +265,94 @@ impl KeySequence {
     }
 }
 
-#[derive(Debug)]
-pub enum Action {
-    KeySeq(KeySequence),
-    Script(Vec<String>),
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::KeySequenceError;
+
+    #[test]
+    fn test_basic_key_sequence() -> Result<()> {
+        let seq = KeySequence::default().parse_step("- a")?;
+
+        assert_eq!(seq.steps.len(), 1);
+        assert!(seq.steps[0].modifiers.is_empty());
+        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_A]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_single_modifier() -> Result<()> {
+        let seq = KeySequence::default().parse_step("ctrl - x")?;
+
+        assert_eq!(seq.steps.len(), 1);
+        assert_eq!(seq.steps[0].modifiers.len(), 1);
+        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTCTRL));
+        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_X]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_multiple_modifiers() -> Result<()> {
+        let seq = KeySequence::default().parse_step("lctrl + lalt - delete")?;
+
+        assert_eq!(seq.steps.len(), 1);
+        assert_eq!(seq.steps[0].modifiers.len(), 2);
+        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTCTRL));
+        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTALT));
+        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_DELETE]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_multiple_steps() -> Result<()> {
+        let seq = KeySequence::default()
+            .parse_step("shift - a")?
+            .parse_step("ctrl + alt - delete")?;
+
+        assert_eq!(seq.steps.len(), 2);
+
+        // First step
+        assert_eq!(seq.steps[0].modifiers.len(), 1);
+        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTSHIFT));
+        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_A]);
+
+        // Second step
+        assert_eq!(seq.steps[1].modifiers.len(), 2);
+        assert!(seq.steps[1].modifiers.contains(&KeyCode::KEY_LEFTCTRL));
+        assert!(seq.steps[1].modifiers.contains(&KeyCode::KEY_LEFTALT));
+        assert_eq!(seq.steps[1].keys, vec![KeyCode::KEY_DELETE]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_special_keys() -> Result<()> {
+        let seq = KeySequence::default()
+            .parse_step("- escape")?
+            .parse_step("- f11")?
+            .parse_step("- pageup")?;
+
+        assert_eq!(seq.steps.len(), 3);
+        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_ESC]);
+        assert_eq!(seq.steps[1].keys, vec![KeyCode::KEY_F11]);
+        assert_eq!(seq.steps[2].keys, vec![KeyCode::KEY_PAGEUP]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_error_invalid_format() {
+        let result = KeySequence::default().parse_step("ctrl + alt delete");
+        assert!(matches!(result, Err(KeySequenceError::InvalidFormat)));
+    }
+
+    #[test]
+    fn test_error_unknown_modifier() {
+        let result = KeySequence::default().parse_step("invalid + ctrl - a");
+        assert!(matches!(result, Err(KeySequenceError::UnknownModifier(_))));
+    }
+
+    #[test]
+    fn test_error_unknown_key() {
+        let result = KeySequence::default().parse_step("ctrl - invalid");
+        assert!(matches!(result, Err(KeySequenceError::UnknownKey(_))));
+    }
 }
