@@ -28,6 +28,21 @@ pub enum GesturesError {
         #[source]
         source: XrandrError,
     },
+
+    #[error("Invalid key sequence: {0}")]
+    KeySequenceInvalid(#[from] KeySequenceError),
+}
+
+#[derive(Error, Debug)]
+pub enum KeySequenceError {
+    #[error("Invalid format")]
+    InvalidFormat,
+
+    #[error("Unknown modifier key: {0}")]
+    UnknownModifier(String),
+
+    #[error("Unknown key: {0}")]
+    UnknownKey(String),
 }
 
 impl From<zbus::Error> for GesturesError {

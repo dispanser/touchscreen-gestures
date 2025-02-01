@@ -62,7 +62,7 @@ impl TryFrom<String> for Orientation {
     }
 }
 
-impl<'a> OrientationSensor for ZbusOMeter<'a> {
+impl OrientationSensor for ZbusOMeter<'_> {
     fn orientation<'life>(
         &'life mut self,
     ) -> Pin<Box<dyn Future<Output = Result<Orientation>> + Send + 'life>> {
@@ -82,7 +82,7 @@ impl<'a> OrientationSensor for ZbusOMeter<'a> {
     }
 }
 
-impl<'a> Drop for ZbusOMeter<'a> {
+impl Drop for ZbusOMeter<'_> {
     fn drop(&mut self) {
         let rt = tokio::runtime::Handle::current();
         let _ = rt.block_on(self.proxy.ReleaseAccelerometer());

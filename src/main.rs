@@ -20,8 +20,8 @@ use nix::{
     poll::{poll, PollFd, PollFlags, PollTimeout},
 };
 use touch::{classifier::classify_gesture, TouchState};
+use touchscreen_gestures::actions::ActionHandler;
 use touchscreen_gestures::error::Result;
-use touchscreen_gestures::{accel, actions::ActionHandler};
 use touchscreen_gestures::{
     accel::{Orientation, OrientationSensor, ZbusOMeter},
     xrandr_handler,

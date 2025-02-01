@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use touchscreen_gestures::actions::Action;
+use touchscreen_gestures::actions::{Action, KeySequence};
 
 use crate::touch::classifier::{Direction::*, FingerPattern::*, Gesture, Size::*};
 
@@ -40,6 +40,11 @@ fn script(cmd: Vec<&str>) -> Action {
     Action::Script(cmd.into_iter().map(Into::into).collect())
 }
 
-fn keys(keys: Vec<&str>) -> Action {
-    Action::KeySeq(keys.into_iter().map(Into::into).collect())
+fn keys(key_steps: Vec<&str>) -> Action {
+    let seq = key_steps
+        .into_iter()
+        .fold(KeySequence::default(), |seq, step| {
+            seq.parse_step(step).expect("Invalid key sequence")
+        });
+    Action::KeySeq(seq)
 }
