@@ -93,15 +93,18 @@ struct KeyStep {
 }
 
 impl KeyStep {
-    /// Parse a key combination string like "lctrl + lalt - a" or "shift - b"
+    /// Parse a key combination string like "lctrl + lalt - a", "shift - b", or just "a"
     pub fn parse(input: &str) -> KeyResult<Self> {
+        // First try splitting on '-' for modifier format
         let parts: Vec<&str> = input.split('-').collect();
-        if parts.len() != 2 {
-            return Err(KeySequenceError::InvalidFormat);
-        }
 
-        let key_part = parts[1].trim();
-        let mods_part = parts[0].trim();
+        let (key_part, mods_part) = if parts.len() == 2 {
+            (parts[1].trim(), parts[0].trim())
+        } else if parts.len() == 1 {
+            (parts[0].trim(), "")
+        } else {
+            return Err(KeySequenceError::InvalidFormat);
+        };
 
         // Parse the main key
         let key = Self::parse_key(key_part)?;
@@ -272,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_basic_key_sequence() -> Result<()> {
-        let seq = KeySequence::default().parse_step("- a")?;
+        let seq = KeySequence::default().parse_step("a")?;
 
         assert_eq!(seq.steps.len(), 1);
         assert!(seq.steps[0].modifiers.is_empty());
@@ -340,19 +343,25 @@ mod tests {
 
     #[test]
     fn test_error_invalid_format() {
-        let result = KeySequence::default().parse_step("ctrl + alt delete");
-        assert!(matches!(result, Err(KeySequenceError::InvalidFormat)));
+        let result = KeySequence::default().parse_step("ctrl - alt - delete");
+        assert_eq!(result.unwrap_err(), KeySequenceError::InvalidFormat);
     }
 
     #[test]
     fn test_error_unknown_modifier() {
         let result = KeySequence::default().parse_step("invalid + ctrl - a");
-        assert!(matches!(result, Err(KeySequenceError::UnknownModifier(_))));
+        assert_eq!(
+            result.unwrap_err(),
+            KeySequenceError::UnknownModifier("invalid".to_string())
+        );
     }
 
     #[test]
     fn test_error_unknown_key() {
         let result = KeySequence::default().parse_step("ctrl - invalid");
-        assert!(matches!(result, Err(KeySequenceError::UnknownKey(_))));
+        assert_eq!(
+            result.unwrap_err(),
+            KeySequenceError::UnknownKey("invalid".to_string())
+        );
     }
 }

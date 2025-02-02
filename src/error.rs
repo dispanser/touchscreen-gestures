@@ -33,7 +33,7 @@ pub enum GesturesError {
     KeySequenceInvalid(#[from] KeySequenceError),
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum KeySequenceError {
     #[error("Invalid format")]
     InvalidFormat,
