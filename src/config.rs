@@ -14,19 +14,19 @@ impl Config {
         Config {
             actions: [
                 (
-                    vec![Move(Down, M), Move(Down, M), Move(Down, M), Move(Down, M)],
+                    vec![Move(Down, S), Move(Down, S), Move(Down, S), Move(Down, S)],
                     script(vec!["/run/current-system/sw/bin/light", "-A", "10"]),
                 ),
                 (
-                    vec![Move(Up, M), Move(Up, M), Move(Up, M), Move(Up, M)],
+                    vec![Move(Up, S), Move(Up, S), Move(Up, S), Move(Up, S)],
                     script(vec!["/run/current-system/sw/bin/light", "-D", "10"]),
                 ),
                 (
-                    vec![Move(Left, M), Move(Left, M)],
+                    vec![Move(Left, S), Move(Left, S)],
                     keys(vec!["S-L"]), // "forward" in qute
                 ),
                 (
-                    vec![Move(Right, M), Move(Right, M)],
+                    vec![Move(Right, S), Move(Right, S)],
                     keys(vec!["S-H"]), // "backward" in qute
                 ),
             ]

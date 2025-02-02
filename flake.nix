@@ -51,6 +51,7 @@
                     harfbuzz
                     libinput udev 
                     cargo-watch
+                    cargo-nextest
                     mold
                     sccache
                     pkg-config

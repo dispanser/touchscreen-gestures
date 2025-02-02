@@ -1,9 +1,8 @@
 use super::FingerState;
 
+// "resolution" is 1000x1000, so
 const NO_MOVE_THRESHOLD: i16 = 20;
-const S_MOVE_THRESHOLD: i16 = 200;
-const M_MOVE_THRESHOLD: i16 = 500;
-const L_MOVE_THRESHOLD: i16 = 800;
+const S_MOVE_THRESHOLD: i16 = 300;
 
 pub type Gesture = Vec<FingerPattern>;
 
@@ -22,9 +21,7 @@ pub enum Direction {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Size {
     S,
-    M,
     L,
-    XL,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -91,9 +88,7 @@ fn detect_finger_pattern(finger: &FingerState) -> FingerPattern {
     };
 
     let size = match dx.abs().max(dy.abs()) {
-        x if x >= L_MOVE_THRESHOLD => Size::XL,
-        x if x >= M_MOVE_THRESHOLD => Size::L,
-        x if x >= S_MOVE_THRESHOLD => Size::M,
+        x if x >= S_MOVE_THRESHOLD => Size::L,
         _ => Size::S,
     };
 
@@ -149,10 +144,9 @@ mod test {
             detect_finger_pattern(&make_finger_state(0, -521)),
             FingerPattern::Move(Direction::Up, Size::L),
         );
-
         assert_eq!(
             detect_finger_pattern(&make_finger_state(399, 899)),
-            FingerPattern::Move(Direction::Down, Size::XL),
+            FingerPattern::Move(Direction::Down, Size::L),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(39, 19)),
@@ -172,7 +166,7 @@ mod test {
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-337, -193)),
-            FingerPattern::Move(Direction::UpLeft, Size::M),
+            FingerPattern::Move(Direction::UpLeft, Size::L),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-11, 21)),
