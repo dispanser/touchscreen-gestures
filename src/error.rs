@@ -35,8 +35,8 @@ pub enum GesturesError {
 
 #[derive(Error, Debug, Eq, PartialEq)]
 pub enum KeySequenceError {
-    #[error("Invalid format")]
-    InvalidFormat,
+    #[error("Invalid format: {0}")]
+    InvalidFormat(String),
 
     #[error("Unknown modifier key: {0}")]
     UnknownModifier(String),

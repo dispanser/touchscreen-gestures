@@ -95,16 +95,29 @@ struct KeyStep {
 impl KeyStep {
     /// Parse a key combination string like "lctrl + lalt - a", "shift - b", or just "a"
     pub fn parse(input: &str) -> KeyResult<Self> {
-        // First try splitting on '-' for modifier format
-        let parts: Vec<&str> = input.split('-').collect();
+        if input.is_empty() {
+            return Err(KeySequenceError::InvalidFormat("empty input".to_string()));
+        }
 
-        let (key_part, mods_part) = if parts.len() == 2 {
-            (parts[1].trim(), parts[0].trim())
-        } else if parts.len() == 1 {
-            (parts[0].trim(), "")
-        } else {
-            return Err(KeySequenceError::InvalidFormat);
+        // Find the first '-' to split modifiers from key
+        let (mods_part, key_part) = match input.find('-') {
+            Some(idx) => (input[..idx].trim(), input[idx + 1..].trim()),
+            None => {
+                // If there's no '-', check if there are '+' characters
+                if input.contains('+') {
+                    return Err(KeySequenceError::InvalidFormat(
+                        "found '+' but missing '-' separator".to_string(),
+                    ));
+                }
+                ("", input.trim())
+            }
         };
+
+        if key_part.is_empty() {
+            return Err(KeySequenceError::InvalidFormat(
+                "missing key after '-'".to_string(),
+            ));
+        }
 
         // Parse the main key
         let key = Self::parse_key(key_part)?;
@@ -343,8 +356,23 @@ mod tests {
 
     #[test]
     fn test_error_invalid_format() {
-        let result = KeySequence::default().parse_step("ctrl - alt - delete");
-        assert_eq!(result.unwrap_err(), KeySequenceError::InvalidFormat);
+        let result = KeySequence::default().parse_step("ctrl + alt + delete");
+        assert_eq!(
+            result.unwrap_err(),
+            KeySequenceError::InvalidFormat("found '+' but missing '-' separator".to_string())
+        );
+
+        let result = KeySequence::default().parse_step("");
+        assert_eq!(
+            result.unwrap_err(),
+            KeySequenceError::InvalidFormat("empty input".to_string())
+        );
+
+        let result = KeySequence::default().parse_step("ctrl -");
+        assert_eq!(
+            result.unwrap_err(),
+            KeySequenceError::InvalidFormat("missing key after '-'".to_string())
+        );
     }
 
     #[test]
@@ -363,5 +391,16 @@ mod tests {
             result.unwrap_err(),
             KeySequenceError::UnknownKey("invalid".to_string())
         );
+    }
+
+    #[test]
+    fn test_modifier_with_minus_key() -> Result<()> {
+        let seq = KeySequence::default().parse_step("shift - -")?;
+
+        assert_eq!(seq.steps.len(), 1);
+        assert_eq!(seq.steps[0].modifiers.len(), 1);
+        assert!(seq.steps[0].modifiers.contains(&KeyCode::KEY_LEFTSHIFT));
+        assert_eq!(seq.steps[0].keys, vec![KeyCode::KEY_MINUS]);
+        Ok(())
     }
 }
