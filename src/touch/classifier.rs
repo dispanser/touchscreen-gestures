@@ -168,9 +168,12 @@ fn detect_finger_pattern(finger: &FingerState) -> FingerPattern {
 
 #[cfg(test)]
 mod test {
-    use crate::touch::{
-        classifier::{Direction, Size},
-        Coordinate, FingerState,
+    use crate::{
+        accel::Orientation,
+        touch::{
+            classifier::{Direction, Size},
+            Coordinate, FingerState,
+        },
     };
 
     use super::{detect_finger_pattern, FingerPattern};
@@ -187,6 +190,34 @@ mod test {
             },
             active: true,
         }
+    }
+
+    #[test]
+    fn test_rotation_bounds() {
+        // Test that multiple rotations don't exceed bounds
+        let move_up = FingerPattern::Move(Direction::Up, Size::L);
+
+        // Test clockwise rotations (positive steps)
+        assert_eq!(
+            move_up.apply_transformation(Orientation::LeftUp), // +2
+            FingerPattern::Move(Direction::Right, Size::L)
+        );
+        assert_eq!(
+            move_up.apply_transformation(Orientation::BottomUp), // +4
+            FingerPattern::Move(Direction::Down, Size::L)
+        );
+
+        // Test counter-clockwise rotations (negative steps)
+        assert_eq!(
+            move_up.apply_transformation(Orientation::RightUp), // -2
+            FingerPattern::Move(Direction::Left, Size::L)
+        );
+
+        // Test that Hold pattern remains unchanged
+        let hold = FingerPattern::Hold;
+        assert_eq!(hold.apply_transformation(Orientation::LeftUp), hold);
+        assert_eq!(hold.apply_transformation(Orientation::RightUp), hold);
+        assert_eq!(hold.apply_transformation(Orientation::BottomUp), hold);
     }
 
     #[test]
