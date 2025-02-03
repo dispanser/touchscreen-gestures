@@ -22,7 +22,8 @@ impl ActionHandler {
             Action::Script(args) => {
                 let cmd = &args[0];
                 let _child = Command::new(cmd).args(args[1..].iter()).spawn();
-                log::info!("running {} with {:?}", args[0], &args[1..])
+                log::info!("running {} with {:?}", args[0], &args[1..]);
+                log::info!("result: {_child:?}");
             }
         }
     }
