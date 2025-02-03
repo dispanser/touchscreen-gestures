@@ -1,3 +1,5 @@
+use crate::accel::Orientation;
+
 use super::FingerState;
 
 // "resolution" is 1000x1000, so
@@ -7,15 +9,26 @@ const S_MOVE_THRESHOLD: i16 = 300;
 pub type Gesture = Vec<FingerPattern>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(u8)]
 pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-    UpLeft,
-    UpRight,
-    DownLeft,
-    DownRight,
+    Up = 0,
+    UpRight = 1,
+    Right = 2,
+    DownRight = 3,
+    Down = 4,
+    DownLeft = 5,
+    Left = 6,
+    UpLeft = 7,
+}
+
+impl Direction {
+    fn rotate(&self, steps: i8) -> Self {
+        let variants = 8u8;
+        let current = *self as u8;
+        let rotated = (current as i8 + steps).rem_euclid(variants as i8) as u8;
+        // Safety: we know the value is valid because of the modulo operation
+        unsafe { std::mem::transmute(rotated) }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -35,7 +48,65 @@ pub enum FingerPattern {
     // Sequence(Vec<FingerPattern>),
 }
 
-impl FingerPattern {}
+impl FingerPattern {
+    pub fn apply_transformation(self, orientation: Orientation) -> Self {
+        match self {
+            FingerPattern::Hold => self,
+            FingerPattern::Move(direction, size) => {
+                let rotation_steps = match orientation {
+                    Orientation::Normal => 0,
+                    Orientation::LeftUp => 2,   // 90° clockwise
+                    Orientation::RightUp => -2, // 90° counter-clockwise
+                    Orientation::BottomUp => 4, // 180°
+                };
+                FingerPattern::Move(direction.rotate(rotation_steps), size)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod transform_tests {
+    use super::*;
+
+    #[test]
+    fn test_hold_transformation() {
+        let hold = FingerPattern::Hold;
+        assert_eq!(hold.apply_transformation(Orientation::LeftUp), hold);
+        assert_eq!(hold.apply_transformation(Orientation::RightUp), hold);
+        assert_eq!(hold.apply_transformation(Orientation::BottomUp), hold);
+    }
+
+    #[test]
+    fn test_left_up_transformation() {
+        let move_up = FingerPattern::Move(Direction::Up, Size::L);
+        assert_eq!(
+            move_up.apply_transformation(Orientation::LeftUp),
+            FingerPattern::Move(Direction::Right, Size::L)
+        );
+
+        let move_upleft = FingerPattern::Move(Direction::UpLeft, Size::S);
+        assert_eq!(
+            move_upleft.apply_transformation(Orientation::LeftUp),
+            FingerPattern::Move(Direction::UpRight, Size::S)
+        );
+    }
+
+    #[test]
+    fn test_bottom_up_transformation() {
+        let move_right = FingerPattern::Move(Direction::Right, Size::S);
+        assert_eq!(
+            move_right.apply_transformation(Orientation::BottomUp),
+            FingerPattern::Move(Direction::Left, Size::S)
+        );
+
+        let move_downright = FingerPattern::Move(Direction::DownRight, Size::L);
+        assert_eq!(
+            move_downright.apply_transformation(Orientation::BottomUp),
+            FingerPattern::Move(Direction::UpLeft, Size::L)
+        );
+    }
+}
 
 pub fn classify_gesture(fingers: impl IntoIterator<Item = FingerState>) -> Gesture {
     let mut gesture: Gesture = fingers

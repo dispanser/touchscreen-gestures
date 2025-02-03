@@ -19,22 +19,21 @@ use nix::{
     fcntl::OFlag,
     poll::{poll, PollFd, PollFlags, PollTimeout},
 };
-use touch::{classifier::classify_gesture, TouchState};
 use touchscreen_gestures::actions::ActionHandler;
 use touchscreen_gestures::error::Result;
+use touchscreen_gestures::touch::{classifier::classify_gesture, TouchState};
 use touchscreen_gestures::{
     accel::{Orientation, OrientationSensor, ZbusOMeter},
-    xrandr_handler,
+    // xrandr_handler,
 };
 
 mod config;
-mod touch;
 // mod x11;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
-    xrandr_handler::test()?;
+    // xrandr_handler::test()?;
     let mut interface = input::Libinput::new_with_udev(Interface);
     interface
         .udev_assign_seat("seat0")
@@ -111,7 +110,7 @@ impl EventHandler {
             for event in input.clone() {
                 match event {
                     Event::Touch(e) => self.handle_touch_event(&e),
-                    Event::Tablet(t) => log::debug!(t:?; "tyx/tablet_event"),
+                    Event::Tablet(t) => log::info!(t:?; "tyx/tablet_event"),
                     _ => {}
                 }
             }
@@ -128,7 +127,10 @@ impl EventHandler {
     }
 
     fn handle_finished_event(&mut self, state: TouchState) {
-        let gesture = classify_gesture(state.fingers);
+        let gesture: Vec<_> = classify_gesture(state.fingers)
+            .into_iter()
+            .map(|fp| fp.apply_transformation(self.orientation))
+            .collect();
         println!("tyx/got: {gesture:?}");
         match self.config.actions.get(&gesture) {
             None => log::info!("unhandled gesture: {:?}", gesture.as_slice()),

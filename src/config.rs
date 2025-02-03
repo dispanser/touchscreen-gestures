@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use touchscreen_gestures::actions::{keyboard::KeySequence, Action};
 
-use crate::touch::classifier::{Direction::*, FingerPattern::*, Gesture, Size::*};
+use touchscreen_gestures::touch::classifier::{Direction::*, FingerPattern::*, Gesture, Size::*};
 
 #[derive(Debug)]
 pub struct Config {
@@ -19,15 +19,23 @@ impl Config {
                 ),
                 (
                     vec![Move(Up, S), Move(Up, S), Move(Up, S), Move(Up, S)],
-                    script(vec!["/run/current-system/sw/bin/light", "-D", "10"]),
+                    script(vec!["/run/current-system/sw/bin/light", "-U", "10"]),
                 ),
                 (
                     vec![Move(Left, S), Move(Left, S)],
-                    keys(vec!["S-L"]), // "forward" in qute
+                    keys(vec!["ctrl - h"]), // "backward" in qute
                 ),
                 (
                     vec![Move(Right, S), Move(Right, S)],
-                    keys(vec!["S-H"]), // "backward" in qute
+                    keys(vec!["ctrl - l"]), // "forward" in qute
+                ),
+                (
+                    vec![Move(Right, L)],
+                    keys(vec!["r"]), // "forward" in qute
+                ),
+                (
+                    vec![Move(Left, L)],
+                    keys(vec!["l"]), // "forward" in qute
                 ),
             ]
             .into_iter()

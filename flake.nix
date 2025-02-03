@@ -31,7 +31,6 @@
                 {
                   env = {
                     RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
-                    # LD_LIBRARY_PATH = "${lib.makeLibraryPath buildInputs}";
                   };
                   languages.rust = {
                     enable = true;
@@ -49,7 +48,7 @@
                     cairo
                     gdk-pixbuf
                     harfbuzz
-                    libinput udev 
+                    libinput udev
                     cargo-watch
                     cargo-nextest
                     mold
@@ -57,6 +56,7 @@
                     pkg-config
                     libiio
                     xorg.libXrandr
+                    xorg.libX11
                   ];
                 }
               ];
