@@ -12,10 +12,14 @@ This is similar to and inspired by [lisgd](https://github.com/jjsullivan5196/lis
 - [x] finger "hold": not moving is a choice!
 - [ ] edge gestures: detect if a finger movements starts or ends at an edge
 - [ ] gesture paths: split continuous finger movement into a path of multiple partial movements, like "`right` then `down` then `left` then `up`" (a rectangle).
-- [ ] virtual knob: hold one (or more) fingers, rotate one (or more) fingers in a circle around it as if rotating a knob
+
+### Potential future gestures
+
+- virtual knob: hold one (or more) fingers, rotate one (or more) fingers in a circle around it as if rotating a knob
     - e.g. for brightness / volume controls
     - this is somewhat at odds with the multi-path gesture above, as distinguishing between (`Right` -> `Down`) and rotation is hard
 
 ## Actions
 
-
+- [x] create sequences of keypresses
+- [x] run commands

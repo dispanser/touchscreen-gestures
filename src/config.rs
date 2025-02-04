@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use touchscreen_gestures::actions::{keyboard::KeySequence, Action};
 
-use touchscreen_gestures::touch::classifier::{Direction::*, FingerPattern::*, Gesture, Size::*};
+use touchscreen_gestures::touch::classifier::Edge;
+use touchscreen_gestures::touch::classifier::{Direction::*, FingerPattern, Gesture, Size::*};
 
 #[derive(Debug)]
 pub struct Config {
@@ -14,44 +15,92 @@ impl Config {
         Config {
             actions: [
                 (
-                    vec![Move(Down, S), Move(Down, S), Move(Down, S), Move(Down, S)],
+                    vec![
+                        FingerPattern::new_move(Down, S, Edge::None),
+                        FingerPattern::new_move(Down, S, Edge::None),
+                        FingerPattern::new_move(Down, S, Edge::None),
+                        FingerPattern::new_move(Down, S, Edge::None),
+                    ],
                     script(vec!["/run/current-system/sw/bin/light", "-A", "10"]),
                 ),
                 (
-                    vec![Move(Up, S), Move(Up, S), Move(Up, S), Move(Up, S)],
+                    vec![
+                        FingerPattern::new_move(Up, S, Edge::None),
+                        FingerPattern::new_move(Up, S, Edge::None),
+                        FingerPattern::new_move(Up, S, Edge::None),
+                        FingerPattern::new_move(Up, S, Edge::None),
+                    ],
                     script(vec!["/run/current-system/sw/bin/light", "-U", "10"]),
                 ),
                 (
-                    vec![Move(Down, L), Move(Down, L), Move(Down, L), Move(Down, L)],
+                    vec![
+                        FingerPattern::new_move(Down, L, Edge::None),
+                        FingerPattern::new_move(Down, L, Edge::None),
+                        FingerPattern::new_move(Down, L, Edge::None),
+                        FingerPattern::new_move(Down, L, Edge::None),
+                    ],
                     script(vec!["/run/current-system/sw/bin/light", "-A", "30"]),
                 ),
                 (
-                    vec![Move(Up, L), Move(Up, L), Move(Up, L), Move(Up, L)],
+                    vec![
+                        FingerPattern::new_move(Up, L, Edge::None),
+                        FingerPattern::new_move(Up, L, Edge::None),
+                        FingerPattern::new_move(Up, L, Edge::None),
+                        FingerPattern::new_move(Up, L, Edge::None),
+                    ],
                     script(vec!["/run/current-system/sw/bin/light", "-U", "30"]),
                 ),
                 (
-                    vec![Move(Down, S), Move(Down, S), Move(Down, S)],
+                    vec![
+                        FingerPattern::new_move(Down, S, Edge::None),
+                        FingerPattern::new_move(Down, S, Edge::None),
+                        FingerPattern::new_move(Down, S, Edge::None),
+                    ],
                     keys(vec!["r"]),
                 ),
-                (vec![Move(Up, S), Move(Up, S), Move(Up, S)], keys(vec!["x"])),
                 (
-                    vec![Move(Left, S), Move(Left, S), Move(Left, S)],
+                    vec![
+                        FingerPattern::new_move(Up, S, Edge::None),
+                        FingerPattern::new_move(Up, S, Edge::None),
+                        FingerPattern::new_move(Up, S, Edge::None),
+                    ],
+                    keys(vec!["x"]),
+                ),
+                (
+                    vec![
+                        FingerPattern::new_move(Left, S, Edge::None),
+                        FingerPattern::new_move(Left, S, Edge::None),
+                        FingerPattern::new_move(Left, S, Edge::None),
+                    ],
                     keys(vec!["alt - j"]), // previous tab
                 ),
                 (
-                    vec![Move(Right, S), Move(Right, S), Move(Right, S)],
+                    vec![
+                        FingerPattern::new_move(Right, S, Edge::None),
+                        FingerPattern::new_move(Right, S, Edge::None),
+                        FingerPattern::new_move(Right, S, Edge::None),
+                    ],
                     keys(vec!["alt - k"]), // next tab
                 ),
                 (
-                    vec![Move(Left, S), Move(Left, S)],
+                    vec![
+                        FingerPattern::new_move(Left, S, Edge::None),
+                        FingerPattern::new_move(Left, S, Edge::None),
+                    ],
                     keys(vec!["ctrl - l"]), // "forward" in qute
                 ),
                 (
-                    vec![Move(Right, S), Move(Right, S)],
+                    vec![
+                        FingerPattern::new_move(Right, S, Edge::None),
+                        FingerPattern::new_move(Right, S, Edge::None),
+                    ],
                     keys(vec!["ctrl - h"]), // "backward" in qute
                 ),
                 (
-                    vec![Move(Right, S), Move(Left, S)],
+                    vec![
+                        FingerPattern::new_move(Right, S, Edge::None),
+                        FingerPattern::new_move(Left, S, Edge::None),
+                    ],
                     script(vec![
                         "/nix/store/hp5ca5wkhkxvldva26yqmy52azczl1sq-onboard-1.4.1/bin/onboard",
                         "-l",
@@ -59,7 +108,10 @@ impl Config {
                     ]),
                 ),
                 (
-                    vec![Move(Right, L), Move(Left, L)],
+                    vec![
+                        FingerPattern::new_move(Right, L, Edge::None),
+                        FingerPattern::new_move(Left, L, Edge::None),
+                    ],
                     script(vec!["killall", "-r", "onboard"]),
                 ),
             ]
