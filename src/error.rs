@@ -31,6 +31,24 @@ pub enum GesturesError {
 
     #[error("Invalid key sequence: {0}")]
     KeySequenceInvalid(#[from] KeySequenceError),
+
+    #[error("Device not found: {0}")]
+    DeviceNotFound(String),
+
+    #[error("Invalid device ID for device: {0}")]
+    InvalidDeviceId(String),
+
+    #[error("Failed to execute xinput command")]
+    XInputFailed {
+        #[source]
+        source: Box<dyn std::error::Error>,
+    },
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    Utf8(#[from] std::string::FromUtf8Error),
 }
 
 #[derive(Error, Debug, Eq, PartialEq)]

@@ -6,6 +6,7 @@ use std::{
         unix::fs::OpenOptionsExt as _,
     },
     path::Path,
+    process::Command,
     time::Duration,
 };
 
@@ -19,13 +20,13 @@ use nix::{
     fcntl::OFlag,
     poll::{poll, PollFd, PollFlags, PollTimeout},
 };
-use touchscreen_gestures::actions::ActionHandler;
 use touchscreen_gestures::error::Result;
 use touchscreen_gestures::touch::{classifier::classify_gesture, TouchState};
 use touchscreen_gestures::{
     accel::{Orientation, OrientationSensor, ZbusOMeter},
-    // xrandr_handler,
+    xrandr_handler,
 };
+use touchscreen_gestures::{actions::ActionHandler, error::GesturesError};
 
 mod config;
 // mod x11;
@@ -38,8 +39,9 @@ async fn main() -> Result<()> {
     interface
         .udev_assign_seat("seat0")
         .expect("unable to assign seat to libinput interface(?)");
-    if has_gesture_device(&mut interface) {
-        let mut eh = EventHandler::new(Config::my_config()).await?;
+    if let Ok(device) = find_gesture_device(&mut interface) {
+        log::info!("detected touch-capable device: {device:?}");
+        let mut eh = EventHandler::new(device, Config::my_config()).await?;
         eh.main_loop(&mut interface).await?;
     } else {
         log::error!("no device with touch capabilities available")
@@ -47,18 +49,35 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn has_gesture_device(input: &mut Libinput) -> bool {
+fn query_device_by_name(name: String) -> Result<TouchDevice> {
+    let output = Command::new("xinput")
+        .args(["list", "--id-only", &name])
+        .output()?;
+
+    if !output.status.success() {
+        return Err(GesturesError::DeviceNotFound(name));
+    }
+
+    let id = String::from_utf8(output.stdout)?
+        .trim()
+        .parse::<u32>()
+        .map_err(|_| GesturesError::InvalidDeviceId(name.clone()))?;
+
+    Ok(TouchDevice { name, id })
+}
+
+fn find_gesture_device(input: &mut Libinput) -> Result<TouchDevice> {
     input.dispatch().unwrap();
     for event in input.clone() {
         if let Event::Device(e) = event {
             if e.device().has_capability(DeviceCapability::Touch) {
-                log::info!(name = e.device().name(); "detected touch-capable device");
-                return true;
+                let name = e.device().name().to_owned();
+                return query_device_by_name(name);
             }
         }
         input.dispatch().unwrap();
     }
-    false
+    Err(GesturesError::DeviceNotFound("ANY_TOUCH".into()))
 }
 
 pub struct Interface;
@@ -79,7 +98,14 @@ impl LibinputInterface for Interface {
     }
 }
 
+#[derive(Debug)]
+struct TouchDevice {
+    name: String,
+    id: u32,
+}
+
 struct EventHandler {
+    device: TouchDevice,
     touch_state: TouchState,
     action_handler: ActionHandler,
     config: Config,
@@ -88,11 +114,12 @@ struct EventHandler {
 }
 
 impl EventHandler {
-    pub async fn new(config: Config) -> Result<Self> {
+    pub async fn new(gesture_device_name: TouchDevice, config: Config) -> Result<Self> {
         let mut orientation_sensor = Box::new(ZbusOMeter::try_new().await?);
         let orientation = orientation_sensor.orientation().await?;
         info!("orientation at start: {orientation:?}");
         Ok(Self {
+            device: gesture_device_name,
             touch_state: TouchState::default(),
             action_handler: ActionHandler::new()?,
             config,
@@ -145,6 +172,10 @@ impl EventHandler {
                 "detected orientation change: {:?} -> {orientation:?}",
                 self.orientation
             );
+
+            Command::new("xinput")
+                .args(["map-to-output", &self.device.id.to_string(), "eDP-1"])
+                .spawn()?;
             self.orientation = orientation;
         }
         Ok(())
