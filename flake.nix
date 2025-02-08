@@ -1,62 +1,67 @@
 {
+  description = "Your Rust project description";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    systems.url = "github:nix-systems/default";
-    devenv.url = "github:cachix/devenv";
-  };
-
-  nixConfig = {
-    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
-    extra-substituters = "https://devenv.cachix.org";
-  };
-
-  outputs = { self, nixpkgs, devenv, systems, ... } @ inputs:
-    let
-      forEachSystem = nixpkgs.lib.genAttrs (import systems);
-    in
-    {
-      devShells = forEachSystem
-        (system:
-          let
-            pkgs = nixpkgs.legacyPackages.${system};
-          in
-          {
-            default = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                {
-                  env = {
-                    RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
-                  };
-                  languages.rust = {
-                    enable = true;
-                    components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" ];
-                  };
-                  pre-commit.hooks = {
-                    rustfmt.enable = true;
-                    clippy.enable = true;
-                  };
-                  packages = with pkgs; [
-                    graphene
-                    gtk4
-                    glib
-                    pango
-                    cairo
-                    gdk-pixbuf
-                    harfbuzz
-                    libinput udev
-                    cargo-watch
-                    cargo-nextest
-                    mold
-                    sccache
-                    pkg-config
-                    libiio
-                    xorg.libXrandr
-                    xorg.libX11
-                  ];
-                }
-              ];
-            };
-          });
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
+    crane.url = "github:ipetkov/crane";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { nixpkgs, rust-overlay, crane, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
+        
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" "rust-analyzer" ];
+        };
+
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+
+        src = craneLib.cleanCargoSource (craneLib.path ./.);
+
+        commonArgs = {
+          inherit src;
+          buildInputs = with pkgs; [
+            libinput
+            udev
+            xorg.libXrandr
+            xorg.libX11
+          ];
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+          ];
+        };
+
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+        touchscreen-gestures = craneLib.buildPackage (commonArgs // {
+          inherit cargoArtifacts;
+        });
+      in
+      {
+        packages.default = touchscreen-gestures;
+
+        devShells.default = pkgs.mkShell {
+          inputsFrom = [ touchscreen-gestures ];
+          packages = with pkgs; [
+            rustToolchain
+            rust-analyzer
+            cargo-watch
+            cargo-audit
+          ];
+        };
+
+        # This is what makes it usable as an overlay
+        overlays.default = final: prev: {
+          your-package = touchscreen-gestures;
+        };
+      });
 }
