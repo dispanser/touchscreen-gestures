@@ -10,6 +10,8 @@ use std::{
     time::Duration,
 };
 
+use std::sync::mpsc::{self, Receiver};
+
 use config::Config;
 use input::{
     event::{EventTrait as _, TouchEvent},
@@ -20,13 +22,13 @@ use nix::{
     fcntl::OFlag,
     poll::{poll, PollFd, PollFlags, PollTimeout},
 };
-use touchscreen_gestures::error::Result;
 use touchscreen_gestures::touch::{classifier::classify_gesture, TouchState};
 use touchscreen_gestures::{
     accel::{Orientation, OrientationSensor, ZbusOMeter},
     xrandr_handler,
 };
 use touchscreen_gestures::{actions::ActionHandler, error::GesturesError};
+use touchscreen_gestures::{actions::Cmd, error::Result};
 
 mod config;
 // mod x11;
@@ -41,7 +43,7 @@ async fn main() -> Result<()> {
         .expect("unable to assign seat to libinput interface(?)");
     if let Ok(device) = find_gesture_device(&mut interface) {
         log::info!("detected touch-capable device: {device:?}");
-        let mut eh = EventHandler::new(device, Config::my_config()).await?;
+        let mut eh = EventHandler::new(device, Config::my_config(500)).await?;
         eh.main_loop(&mut interface).await?;
     } else {
         log::error!("no device with touch capabilities available")
@@ -111,6 +113,7 @@ struct EventHandler {
     config: Config,
     orientation_sensor: Box<dyn OrientationSensor>,
     orientation: Orientation,
+    cmd_rx: Receiver<Cmd>,
 }
 
 impl EventHandler {
@@ -118,19 +121,24 @@ impl EventHandler {
         let mut orientation_sensor = Box::new(ZbusOMeter::try_new().await?);
         let orientation = orientation_sensor.orientation().await?;
         info!("orientation at start: {orientation:?}");
+
+        let (cmd_tx, cmd_rx) = mpsc::channel();
+
         Ok(Self {
             device: gesture_device_name,
             touch_state: TouchState::default(),
-            action_handler: ActionHandler::new()?,
+            action_handler: ActionHandler::new(cmd_tx)?,
             config,
             orientation_sensor,
             orientation,
+            cmd_rx,
         })
     }
 
     pub async fn main_loop(&mut self, input: &mut Libinput) -> Result<()> {
         let fds = PollFd::new(input.as_fd(), PollFlags::POLLIN);
-        let poll_interval = PollTimeout::try_from(Duration::from_millis(500)).unwrap();
+        let poll_interval =
+            PollTimeout::try_from(Duration::from_millis(self.config.poll_interval_ms)).unwrap();
         while let Ok(_fd) = poll(&mut [fds], poll_interval) {
             self.handle_orientation().await?;
             input.clone().dispatch().unwrap();
@@ -140,6 +148,10 @@ impl EventHandler {
                     Event::Tablet(t) => log::info!(t:?; "tyx/tablet_event"),
                     _ => {}
                 }
+            }
+            match self.cmd_rx.recv() {
+                Ok(cmd) => debug!("received internal command: {cmd:?}"),
+                Err(e) => info!("error receiving internal command: {e:?}"),
             }
         }
         Ok(())

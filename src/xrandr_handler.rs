@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{accel::Orientation, error::Result};
 use log::debug;
-use xrandr::{Rotation, XHandle};
+use xrandr::{Rotation, XHandle, XrandrError};
 
 pub struct DisplayHander {
     pub xhandle: XHandle,
@@ -47,20 +47,24 @@ impl DisplayHander {
         for o in active_outputs.iter() {
             debug!("active: {}", o.name);
         }
+        let mut edp_output = None;
         active_outputs.iter().try_for_each(|output| {
             let name = output.name.to_lowercase();
             if name.contains("edp") {
                 debug!("enabling {name}");
                 self.xhandle.enable(output)?;
                 // fails, we're too fast - can't enable an output and rotate it immediately
-                self.xhandle
-                    .set_rotation(output, &from_orientation(orientation))?;
+                edp_output = Some(output);
             } else {
                 debug!("disabling {name}");
                 self.xhandle.disable(output)?;
             }
-            Ok(())
-        })
+
+            Ok::<(), XrandrError>(())
+        })?;
+        Ok(edp_output
+            .iter()
+            .try_for_each(|o| self.xhandle.set_rotation(o, &from_orientation(orientation)))?)
     }
 
     // fn active_outputs(&mut self) -> Result<impl Iterator<Item = &Output>> {

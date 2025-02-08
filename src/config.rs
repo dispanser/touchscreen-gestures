@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use touchscreen_gestures::actions::Cmd;
 use touchscreen_gestures::actions::{keyboard::KeySequence, Action};
 
 use touchscreen_gestures::touch::classifier::Edge;
@@ -7,13 +8,22 @@ use touchscreen_gestures::touch::classifier::{Direction::*, FingerPattern, Gestu
 
 #[derive(Debug)]
 pub struct Config {
+    pub poll_interval_ms: u64,
     pub actions: HashMap<Gesture, Action>,
 }
 
 impl Config {
-    pub fn my_config() -> Self {
+    pub fn my_config(poll_interval_ms: u64) -> Self {
         Config {
+            poll_interval_ms,
             actions: [
+                (
+                    vec![
+                        FingerPattern::new_move(Up, S, Edge::Bottom),
+                        FingerPattern::new_move(Up, S, Edge::Bottom),
+                    ],
+                    Action::Cmd(Cmd::InternalScreen),
+                ),
                 (
                     vec![
                         FingerPattern::new_move(Down, S, Edge::None),
@@ -98,8 +108,8 @@ impl Config {
                 ),
                 (
                     vec![
-                        FingerPattern::new_move(Right, S, Edge::None),
-                        FingerPattern::new_move(Left, S, Edge::None),
+                        FingerPattern::new_move(Right, S, Edge::Left),
+                        FingerPattern::new_move(Left, S, Edge::Right),
                     ],
                     script(vec![
                         "/nix/store/hp5ca5wkhkxvldva26yqmy52azczl1sq-onboard-1.4.1/bin/onboard",
@@ -109,8 +119,8 @@ impl Config {
                 ),
                 (
                     vec![
-                        FingerPattern::new_move(Right, L, Edge::None),
-                        FingerPattern::new_move(Left, L, Edge::None),
+                        FingerPattern::new_move(Right, S, Edge::None),
+                        FingerPattern::new_move(Left, S, Edge::None),
                     ],
                     script(vec!["killall", "-r", "onboard"]),
                 ),
