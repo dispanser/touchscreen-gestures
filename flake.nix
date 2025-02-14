@@ -61,7 +61,7 @@
 
         # This is what makes it usable as an overlay
         overlays.default = final: prev: {
-          your-package = touchscreen-gestures;
+          touchscreen-gestures = touchscreen-gestures;
         };
       });
 }
