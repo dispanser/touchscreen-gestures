@@ -23,3 +23,4 @@ This is similar to and inspired by [lisgd](https://github.com/jjsullivan5196/lis
 
 - [x] create sequences of keypresses
 - [x] run commands
+

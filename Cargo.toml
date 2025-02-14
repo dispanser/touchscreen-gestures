@@ -17,7 +17,7 @@ ctrlc = { version = "3.4.5", features = ["termination"] }
 thiserror = "2"
 
 x11 = "2.21.0"
-xrandr = "0.2.0"
+xrandr = { git = "https://github.com/dispanser/xrandr-rs", branch = "main" }
 
 industrial-io = "0.6.0"
 

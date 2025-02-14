@@ -36,7 +36,7 @@ mod config;
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
-    // xrandr_handler::test()?;
+    xrandr_handler::test()?;
     let mut interface = input::Libinput::new_with_udev(Interface);
     interface
         .udev_assign_seat("seat0")
@@ -102,6 +102,7 @@ impl LibinputInterface for Interface {
 
 #[derive(Debug)]
 struct TouchDevice {
+    #[allow(dead_code)]
     name: String,
     id: u32,
 }
@@ -149,7 +150,7 @@ impl EventHandler {
                     _ => {}
                 }
             }
-            match self.cmd_rx.recv() {
+            match self.cmd_rx.try_recv() {
                 Ok(cmd) => debug!("received internal command: {cmd:?}"),
                 Err(e) => info!("error receiving internal command: {e:?}"),
             }

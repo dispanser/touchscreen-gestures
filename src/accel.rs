@@ -24,7 +24,7 @@ pub struct ZbusOMeter<'a> {
     last: Orientation,
 }
 
-impl<'a> ZbusOMeter<'a> {
+impl ZbusOMeter<'_> {
     pub async fn try_new() -> Result<Self> {
         let connection = Connection::system().await?;
         let proxy = IioSensorProxy::new(&connection).await?;

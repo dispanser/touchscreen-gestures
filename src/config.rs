@@ -93,17 +93,11 @@ impl Config {
                     keys(vec!["alt - k"]), // next tab
                 ),
                 (
-                    vec![
-                        FingerPattern::new_move(Left, S, Edge::None),
-                        FingerPattern::new_move(Left, S, Edge::None),
-                    ],
+                    vec![FingerPattern::new_move(Left, S, Edge::Right)],
                     keys(vec!["ctrl - l"]), // "forward" in qute
                 ),
                 (
-                    vec![
-                        FingerPattern::new_move(Right, S, Edge::None),
-                        FingerPattern::new_move(Right, S, Edge::None),
-                    ],
+                    vec![FingerPattern::new_move(Right, S, Edge::Left)],
                     keys(vec!["ctrl - h"]), // "backward" in qute
                 ),
                 (
