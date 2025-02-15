@@ -18,93 +18,93 @@ impl Config {
             poll_interval_ms,
             actions: [
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Up, S, Edge::Bottom),
                         FingerPattern::new_move(Up, S, Edge::Bottom),
-                    ],
+                    ]),
                     Action::Cmd(Cmd::InternalScreen),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Down, S, Edge::None),
                         FingerPattern::new_move(Down, S, Edge::None),
                         FingerPattern::new_move(Down, S, Edge::None),
                         FingerPattern::new_move(Down, S, Edge::None),
-                    ],
+                    ]),
                     script(vec!["/run/current-system/sw/bin/light", "-A", "10"]),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Up, S, Edge::None),
                         FingerPattern::new_move(Up, S, Edge::None),
                         FingerPattern::new_move(Up, S, Edge::None),
                         FingerPattern::new_move(Up, S, Edge::None),
-                    ],
+                    ]),
                     script(vec!["/run/current-system/sw/bin/light", "-U", "10"]),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Down, L, Edge::None),
                         FingerPattern::new_move(Down, L, Edge::None),
                         FingerPattern::new_move(Down, L, Edge::None),
                         FingerPattern::new_move(Down, L, Edge::None),
-                    ],
+                    ]),
                     script(vec!["/run/current-system/sw/bin/light", "-A", "30"]),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Up, L, Edge::None),
                         FingerPattern::new_move(Up, L, Edge::None),
                         FingerPattern::new_move(Up, L, Edge::None),
                         FingerPattern::new_move(Up, L, Edge::None),
-                    ],
+                    ]),
                     script(vec!["/run/current-system/sw/bin/light", "-U", "30"]),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Down, S, Edge::None),
                         FingerPattern::new_move(Down, S, Edge::None),
                         FingerPattern::new_move(Down, S, Edge::None),
-                    ],
+                    ]),
                     keys(vec!["r"]),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Up, S, Edge::None),
                         FingerPattern::new_move(Up, S, Edge::None),
                         FingerPattern::new_move(Up, S, Edge::None),
-                    ],
+                    ]),
                     keys(vec!["x"]),
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Left, S, Edge::None),
                         FingerPattern::new_move(Left, S, Edge::None),
                         FingerPattern::new_move(Left, S, Edge::None),
-                    ],
+                    ]),
                     keys(vec!["alt - j"]), // previous tab
                 ),
                 (
-                    vec![
+                    gestures(vec![
                         FingerPattern::new_move(Right, S, Edge::None),
                         FingerPattern::new_move(Right, S, Edge::None),
                         FingerPattern::new_move(Right, S, Edge::None),
-                    ],
+                    ]),
                     keys(vec!["alt - k"]), // next tab
                 ),
                 (
-                    vec![FingerPattern::new_move(Left, S, Edge::Right)],
+                    gestures(vec![FingerPattern::new_move(Left, S, Edge::Right)]),
                     keys(vec!["ctrl - l"]), // "forward" in qute
                 ),
                 (
-                    vec![FingerPattern::new_move(Right, S, Edge::Left)],
+                    gestures(vec![FingerPattern::new_move(Right, S, Edge::Left)]),
                     keys(vec!["ctrl - h"]), // "backward" in qute
                 ),
                 (
-                    vec![
-                        FingerPattern::new_move(Right, S, Edge::Left),
-                        FingerPattern::new_move(Left, S, Edge::Right),
-                    ],
+                    gestures(vec![
+                        FingerPattern::new_move(Up, S, Edge::Left),
+                        FingerPattern::new_move(Up, S, Edge::Right),
+                    ]),
                     script(vec![
                         "/nix/store/hp5ca5wkhkxvldva26yqmy52azczl1sq-onboard-1.4.1/bin/onboard",
                         "-l",
@@ -112,10 +112,10 @@ impl Config {
                     ]),
                 ),
                 (
-                    vec![
-                        FingerPattern::new_move(Right, S, Edge::None),
-                        FingerPattern::new_move(Left, S, Edge::None),
-                    ],
+                    gestures(vec![
+                        FingerPattern::new_move(Down, S, Edge::Left),
+                        FingerPattern::new_move(Down, S, Edge::Right),
+                    ]),
                     script(vec!["killall", "-r", "onboard"]),
                 ),
             ]
@@ -123,6 +123,11 @@ impl Config {
             .collect(),
         }
     }
+}
+
+fn gestures(mut patterns: Vec<FingerPattern>) -> Vec<FingerPattern> {
+    patterns.sort();
+    patterns
 }
 
 fn script(cmd: Vec<&str>) -> Action {

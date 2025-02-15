@@ -1,13 +1,8 @@
 use std::{
-    fs::OpenOptions,
-    mem,
-    os::{
+    fs::OpenOptions, mem, os::{
         fd::{AsFd, IntoRawFd as _, OwnedFd},
         unix::fs::OpenOptionsExt as _,
-    },
-    path::Path,
-    process::Command,
-    time::Duration,
+    }, path::Path, process::Command, sync::mpsc::TryRecvError, time::Duration
 };
 
 use std::sync::mpsc::{self, Receiver};
@@ -125,10 +120,11 @@ impl EventHandler {
 
         let (cmd_tx, cmd_rx) = mpsc::channel();
 
+        let action_handler = ActionHandler::new(cmd_tx)?;
         Ok(Self {
             device: gesture_device_name,
             touch_state: TouchState::default(),
-            action_handler: ActionHandler::new(cmd_tx)?,
+            action_handler,
             config,
             orientation_sensor,
             orientation,
@@ -152,7 +148,8 @@ impl EventHandler {
             }
             match self.cmd_rx.try_recv() {
                 Ok(cmd) => debug!("received internal command: {cmd:?}"),
-                Err(e) => info!("error receiving internal command: {e:?}"),
+                Err(TryRecvError::Empty) => (),
+                Err(TryRecvError::Disconnected) => info!("command channel disconnected"),
             }
         }
         Ok(())
