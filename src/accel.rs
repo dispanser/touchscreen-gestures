@@ -82,13 +82,6 @@ impl OrientationSensor for ZbusOMeter<'_> {
     }
 }
 
-impl Drop for ZbusOMeter<'_> {
-    fn drop(&mut self) {
-        let rt = tokio::runtime::Handle::current();
-        let _ = rt.block_on(self.proxy.ReleaseAccelerometer());
-    }
-}
-
 #[proxy(
     interface = "net.hadess.SensorProxy",
     default_service = "net.hadess.SensorProxy",
