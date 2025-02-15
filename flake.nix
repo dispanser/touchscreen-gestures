@@ -25,22 +25,29 @@
         nativeBuildInputs = with pkgs; [
           rustc
           cargo
-          rust-analyzer
           pkg-config
         ];
 
-      in rec {
-        # For `nix build` & `nix run`:
-        defaultPackage = naersk'.buildPackage {
+        touchscreen-gestures = naersk'.buildPackage {
           src = ./.;
           buildInputs = buildInputs;
           nativeBuildInputs = nativeBuildInputs;
         };
-
+      in rec {
+        # For `nix build` & `nix run`:
+        packages.default = touchscreen-gestures;
         # For `nix develop`:
         devShell = pkgs.mkShell {
-          buildInputs = buildInputs;
-          nativeBuildInputs = nativeBuildInputs;
+          inputsFrom = [ touchscreen-gestures ];
+          packages = with pkgs; [
+            rust-analyzer
+            cargo-watch
+            cargo-audit
+          ];
+        };
+
+        overlays.default = final: prev: {
+          touchscreen-gestures = touchscreen-gestures;
         };
       }
     );
