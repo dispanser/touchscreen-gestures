@@ -33,6 +33,10 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     xrandr_handler::test()?;
     let mut interface = input::Libinput::new_with_udev(Interface);
+    log::debug!("debug");
+    log::info!("info");
+    log::warn!("warn");
+    log::error!("error");
     interface
         .udev_assign_seat("seat0")
         .expect("unable to assign seat to libinput interface(?)");
