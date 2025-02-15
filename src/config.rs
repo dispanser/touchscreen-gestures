@@ -116,7 +116,7 @@ impl Config {
                         FingerPattern::new_move(Down, S, Edge::Left),
                         FingerPattern::new_move(Down, S, Edge::Right),
                     ]),
-                    script(vec!["killall", "-r", "onboard"]),
+                    script(vec!["/run/current-system/sw/bin/killall", "-r", "onboard"]),
                 ),
             ]
             .into_iter()

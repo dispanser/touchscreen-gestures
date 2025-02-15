@@ -33,28 +33,28 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
     xrandr_handler::test()?;
     let mut interface = input::Libinput::new_with_udev(Interface);
-    log::debug!("debug");
-    log::info!("info");
-    log::warn!("warn");
-    log::error!("error");
     interface
         .udev_assign_seat("seat0")
         .expect("unable to assign seat to libinput interface(?)");
-    if let Ok(device) = find_gesture_device(&mut interface) {
-        log::info!("detected touch-capable device: {device:?}");
-        let mut eh = EventHandler::new(device, Config::my_config(500)).await?;
-        eh.main_loop(&mut interface).await?;
-    } else {
-        log::error!("no device with touch capabilities available")
+    match find_gesture_device(&mut interface) {
+        Ok(device) => {
+            log::info!("detected touch-capable device: {device:?}");
+            let mut eh = EventHandler::new(device, Config::my_config(500)).await?;
+            eh.main_loop(&mut interface).await?;
+        }
+        Err(err) => {
+            log::error!("no device with touch capabilities available: {err}")
+        }
     }
     Ok(())
 }
 
 fn query_device_by_name(name: String) -> Result<TouchDevice> {
-    let output = Command::new("xinput")
+    let output = Command::new("/run/current-system/sw/bin/xinput")
         .args(["list", "--id-only", &name])
         .output()?;
 
+    log::debug!("std out for querying device id: \n{}", String::from_utf8_lossy(output.stdout.as_slice()));
     if !output.status.success() {
         return Err(GesturesError::DeviceNotFound(name));
     }
