@@ -1,12 +1,21 @@
-use std::collections::HashMap;
-
 use crate::{accel::Orientation, error::Result};
 use log::debug;
-use xrandr::{Rotation, XHandle, XrandrError};
+use xrandr::{Output, Rotation, XHandle, XrandrError};
 
-pub struct DisplayHander {
+#[allow(dead_code)]
+pub enum State {
+    /// Internal display only
+    Internal,
+    /// External display only
+    External,
+    /// Intrnal display below external display
+    Above,
+}
+
+pub struct DisplayHandler {
     pub xhandle: XHandle,
     pub base_orientation: Orientation,
+    pub state: State,
 }
 
 pub struct DisplayMatch {
@@ -14,27 +23,40 @@ pub struct DisplayMatch {
     pub height: i32,
 }
 
-impl DisplayHander {
+impl DisplayHandler {
     ///  base_orientation to indicate the default orientation report of the internal screen
     pub fn try_new(base_orientation: Orientation) -> Result<Self> {
         Ok(Self {
             xhandle: XHandle::open()?,
             base_orientation,
+            state: State::Internal,
         })
     }
 
     /// Auto-configure screen. Hardcoded for my setup, not applicable to anyone
-    pub fn auto(&mut self) -> Result<()> {
-        let _active_monitors = self.xhandle.monitors()?;
-        let _outputs_by_name: HashMap<_, _> = self
-            .xhandle
-            .all_outputs()?
-            .into_iter()
-            .filter(|output| output.connected)
-            .map(|output| (output.name.clone(), output))
-            .collect();
+    pub fn auto(&mut self, orientation: &Orientation) -> Result<()> {
+        let outputs = self.xhandle.all_outputs()?.into_iter().collect::<Vec<_>>();
 
-        Ok(())
+        Ok(match &self.state {
+            State::Internal => outputs.iter().try_for_each(|output| {
+                if output.connected {
+                    if is_internal(&output) {
+                        log::debug!("rotating active output {}", output.name);
+                        self.xhandle
+                            .set_rotation(&output, &from_orientation(orientation))
+                    } else {
+                        log::debug!("disabling output {}", output.name);
+                        self.xhandle.disable(&output)
+                    }
+                } else if is_internal(&output) {
+                    log::debug!("activing and rotation output {}", output.name);
+                    self.xhandle.enable(&output, &from_orientation(orientation))
+                } else {
+                    Ok(())
+                }
+            }),
+            _ => unimplemented!("states"),
+        }?)
     }
 
     pub fn internal(&mut self, orientation: &Orientation) -> Result<()> {
@@ -58,13 +80,10 @@ impl DisplayHander {
             Ok::<(), XrandrError>(())
         })?)
     }
+}
 
-    // fn active_outputs(&mut self) -> Result<impl Iterator<Item = &Output>> {
-    //     Ok(self.xhandle.all_outputs()?.iter().filter(|output| {
-    //         debug!("{}: {}", output.name, output.connected);
-    //         output.connected
-    //     }))
-    // }
+fn is_internal(output: &Output) -> bool {
+    output.name.to_lowercase().contains("edp")
 }
 
 fn from_orientation(orientation: &Orientation) -> Rotation {
@@ -77,6 +96,6 @@ fn from_orientation(orientation: &Orientation) -> Rotation {
 }
 
 pub fn test() -> Result<()> {
-    let mut h = DisplayHander::try_new(Orientation::Normal)?;
+    let mut h = DisplayHandler::try_new(Orientation::Normal)?;
     h.internal(&Orientation::LeftUp)
 }

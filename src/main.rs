@@ -23,13 +23,13 @@ use nix::{
     fcntl::OFlag,
     poll::{poll, PollFd, PollFlags, PollTimeout},
 };
-use touchscreen_gestures::touch::{classifier::classify_gesture, TouchState};
-use touchscreen_gestures::{
-    accel::{Orientation, OrientationSensor, ZbusOMeter},
-    xrandr_handler,
-};
+use touchscreen_gestures::accel::{Orientation, OrientationSensor, ZbusOMeter};
 use touchscreen_gestures::{actions::ActionHandler, error::GesturesError};
 use touchscreen_gestures::{actions::Cmd, error::Result};
+use touchscreen_gestures::{
+    touch::{classifier::classify_gesture, TouchState},
+    xrandr_handler::DisplayHandler,
+};
 
 mod config;
 // mod x11;
@@ -37,7 +37,6 @@ mod config;
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
-    xrandr_handler::test()?;
     let mut interface = input::Libinput::new_with_udev(Interface);
     interface
         .udev_assign_seat("seat0")
@@ -119,6 +118,7 @@ struct EventHandler {
     device: TouchDevice,
     touch_state: TouchState,
     action_handler: ActionHandler,
+    display_handler: DisplayHandler,
     config: Config,
     orientation_sensor: Box<dyn OrientationSensor>,
     orientation: Orientation,
@@ -134,10 +134,12 @@ impl EventHandler {
         let (cmd_tx, cmd_rx) = mpsc::channel();
 
         let action_handler = ActionHandler::new(cmd_tx)?;
+        let display_handler = DisplayHandler::try_new(Orientation::Normal)?;
         Ok(Self {
             device: gesture_device_name,
             touch_state: TouchState::default(),
             action_handler,
+            display_handler,
             config,
             orientation_sensor,
             orientation,
@@ -195,8 +197,8 @@ impl EventHandler {
                 "detected orientation change: {:?} -> {orientation:?}",
                 self.orientation
             );
-
-            Command::new("xinput")
+            self.display_handler.auto(&orientation)?;
+            Command::new("/run/current-system/sw/bin/xinput")
                 .args(["map-to-output", &self.device.id.to_string(), "eDP-1"])
                 .spawn()?;
             self.orientation = orientation;
