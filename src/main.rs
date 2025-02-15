@@ -1,8 +1,14 @@
 use std::{
-    fs::OpenOptions, mem, os::{
+    fs::OpenOptions,
+    mem,
+    os::{
         fd::{AsFd, IntoRawFd as _, OwnedFd},
         unix::fs::OpenOptionsExt as _,
-    }, path::Path, process::Command, sync::mpsc::TryRecvError, time::Duration
+    },
+    path::Path,
+    process::Command,
+    sync::mpsc::TryRecvError,
+    time::Duration,
 };
 
 use std::sync::mpsc::{self, Receiver};
@@ -54,7 +60,10 @@ fn query_device_by_name(name: String) -> Result<TouchDevice> {
         .args(["list", "--id-only", &name])
         .output()?;
 
-    log::debug!("std out for querying device id: \n{}", String::from_utf8_lossy(output.stdout.as_slice()));
+    log::debug!(
+        "std out for querying device id: \n{}",
+        String::from_utf8_lossy(output.stdout.as_slice())
+    );
     if !output.status.success() {
         return Err(GesturesError::DeviceNotFound(name));
     }

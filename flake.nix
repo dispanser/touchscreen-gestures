@@ -40,6 +40,7 @@
         devShell = pkgs.mkShell {
           inputsFrom = [ touchscreen-gestures ];
           packages = with pkgs; [
+            rustfmt
             rust-analyzer
             cargo-watch
             cargo-audit
