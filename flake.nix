@@ -1,67 +1,47 @@
 {
-  description = "Your Rust project description";
-
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    crane.url = "github:ipetkov/crane";
     flake-utils.url = "github:numtide/flake-utils";
+    naersk.url = "github:nix-community/naersk";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { nixpkgs, rust-overlay, crane, flake-utils, ... }:
+  outputs = { self, flake-utils, naersk, nixpkgs }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-        };
-        
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" ];
+        pkgs = (import nixpkgs) {
+          inherit system;
         };
 
-        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+        naersk' = pkgs.callPackage naersk {};
 
-        src = craneLib.cleanCargoSource (craneLib.path ./.);
+        # Define shared buildInputs and nativeBuildInputs
+        buildInputs = with pkgs; [
+          libinput
+          udev
+          xorg.libXrandr
+          xorg.libX11
+        ];
 
-        commonArgs = {
-          inherit src;
-          buildInputs = with pkgs; [
-            libinput
-            udev
-            xorg.libXrandr
-            xorg.libX11
-          ];
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
+        nativeBuildInputs = with pkgs; [
+          rustc
+          cargo
+          rust-analyzer
+          pkg-config
+        ];
+
+      in rec {
+        # For `nix build` & `nix run`:
+        defaultPackage = naersk'.buildPackage {
+          src = ./.;
+          buildInputs = buildInputs;
+          nativeBuildInputs = nativeBuildInputs;
         };
 
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-        touchscreen-gestures = craneLib.buildPackage (commonArgs // {
-          inherit cargoArtifacts;
-        });
-      in
-      {
-        packages.default = touchscreen-gestures;
-
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [ touchscreen-gestures ];
-          packages = with pkgs; [
-            rustToolchain
-            rust-analyzer
-            cargo-watch
-            cargo-audit
-          ];
+        # For `nix develop`:
+        devShell = pkgs.mkShell {
+          buildInputs = buildInputs;
+          nativeBuildInputs = nativeBuildInputs;
         };
-
-        # This is what makes it usable as an overlay
-        overlays.default = final: prev: {
-          touchscreen-gestures = touchscreen-gestures;
-        };
-      });
+      }
+    );
 }
