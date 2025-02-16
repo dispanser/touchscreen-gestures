@@ -43,8 +43,9 @@
             clippy
             rustfmt
             rust-analyzer
-            cargo-watch
             cargo-audit
+            cargo-nextest
+            cargo-watch
           ];
         };
 

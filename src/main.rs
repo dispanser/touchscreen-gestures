@@ -32,7 +32,6 @@ use touchscreen_gestures::{
 };
 
 mod config;
-// mod x11;
 
 #[tokio::main]
 async fn main() -> Result<()> {
