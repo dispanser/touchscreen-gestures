@@ -105,18 +105,26 @@ impl Config {
                         FingerPattern::new_move(Up, S, Edge::Left),
                         FingerPattern::new_move(Up, S, Edge::Right),
                     ]),
+
                     script(vec![
-                        "/nix/store/hp5ca5wkhkxvldva26yqmy52azczl1sq-onboard-1.4.1/bin/onboard",
-                        "-l",
-                        "/home/pi/src/github/dispanser/dot-files/configs/onboard/mine.onboard",
+                        "/etc/profiles/per-user/pi/bin/dbus-send",
+                        "--type=method_call",
+                        "--dest=org.onboard.Onboard",
+                        "/org/onboard/Onboard/Keyboard",
+                        "org.onboard.Onboard.Keyboard.ToggleVisible",
                     ]),
+
                 ),
                 (
                     gestures(vec![
                         FingerPattern::new_move(Down, S, Edge::Left),
                         FingerPattern::new_move(Down, S, Edge::Right),
                     ]),
-                    script(vec!["/run/current-system/sw/bin/killall", "-r", "onboard"]),
+                    script(vec![
+                        "/nix/store/hp5ca5wkhkxvldva26yqmy52azczl1sq-onboard-1.4.1/bin/onboard",
+                        "-l",
+                        "/home/pi/src/github/dispanser/dot-files/configs/onboard/mine.onboard",
+                    ]),
                 ),
             ]
             .into_iter()
