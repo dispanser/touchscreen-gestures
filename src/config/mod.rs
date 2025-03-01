@@ -105,7 +105,6 @@ impl Config {
                         FingerPattern::new_move(Up, S, Edge::Left),
                         FingerPattern::new_move(Up, S, Edge::Right),
                     ]),
-
                     script(vec![
                         "/etc/profiles/per-user/pi/bin/dbus-send",
                         "--type=method_call",
@@ -113,7 +112,6 @@ impl Config {
                         "/org/onboard/Onboard/Keyboard",
                         "org.onboard.Onboard.Keyboard.ToggleVisible",
                     ]),
-
                 ),
                 (
                     gestures(vec![
