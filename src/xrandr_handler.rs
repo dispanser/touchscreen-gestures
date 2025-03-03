@@ -40,17 +40,17 @@ impl DisplayHandler {
         Ok(match &self.state {
             State::Internal => outputs.iter().try_for_each(|output| {
                 if output.connected {
-                    if is_internal(&output) {
+                    if is_internal(output) {
                         log::debug!("rotating active output {}", output.name);
                         self.xhandle
-                            .set_rotation(&output, &from_orientation(orientation))
+                            .set_rotation(output, &from_orientation(orientation))
                     } else {
                         log::debug!("disabling output {}", output.name);
-                        self.xhandle.disable(&output)
+                        self.xhandle.disable(output)
                     }
-                } else if is_internal(&output) {
+                } else if is_internal(output) {
                     log::debug!("activing and rotation output {}", output.name);
-                    self.xhandle.enable(&output, &from_orientation(orientation))
+                    self.xhandle.enable(output, &from_orientation(orientation))
                 } else {
                     Ok(())
                 }
@@ -88,7 +88,7 @@ fn is_internal(output: &Output) -> bool {
 
 fn from_orientation(orientation: &Orientation) -> Rotation {
     match orientation {
-        Orientation::Normal => Rotation::Normal,
+        Orientation::Normal | Orientation::Unknown => Rotation::Normal,
         Orientation::LeftUp => Rotation::Left,
         Orientation::BottomUp => Rotation::Inverted,
         Orientation::RightUp => Rotation::Right,

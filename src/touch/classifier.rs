@@ -86,7 +86,7 @@ impl FingerPattern {
         let transform_edge = |edge: Edge| match (edge, orientation) {
             (Edge::None, _) => Edge::None,
             // Normal orientation - no change
-            (e, Orientation::Normal) => e,
+            (e, Orientation::Normal | Orientation::Unknown) => e,
             // 90° clockwise
             (Edge::Left, Orientation::LeftUp) => Edge::Top,
             (Edge::Top, Orientation::LeftUp) => Edge::Right,
@@ -114,7 +114,7 @@ impl FingerPattern {
                 origin,
             } => {
                 let rotation_steps = match orientation {
-                    Orientation::Normal => 0,
+                    Orientation::Normal | Orientation::Unknown => 0,
                     Orientation::LeftUp => 2,   // 90° clockwise
                     Orientation::RightUp => -2, // 90° counter-clockwise
                     Orientation::BottomUp => 4, // 180°

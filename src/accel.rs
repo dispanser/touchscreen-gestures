@@ -17,6 +17,8 @@ pub enum Orientation {
     LeftUp,
     BottomUp,
     RightUp,
+    /// fall back when reding intermittently fails.
+    Unknown,
 }
 
 pub struct ZbusOMeter<'a> {
@@ -37,27 +39,20 @@ impl ZbusOMeter<'_> {
             let last: String = proxy.0.get_property("AccelerometerOrientation").await?;
             Ok(Self {
                 proxy,
-                last: last.try_into()?,
+                last: last.into(),
             })
         }
     }
 }
 
-impl TryFrom<String> for Orientation {
-    type Error = GesturesError;
-
-    fn try_from(value: String) -> Result<Self> {
+impl From<String> for Orientation {
+    fn from(value: String) -> Self {
         match value.as_str() {
-            "normal" => Ok(Orientation::Normal),
-            "left-up" => Ok(Orientation::LeftUp),
-            "bottom-up" => Ok(Orientation::BottomUp),
-            "right-up" => Ok(Orientation::RightUp),
-            invalid => Err(GesturesError::AccelerometerFailed {
-                source: Box::new(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    format!("Invalid orientation: {}", invalid),
-                )),
-            }),
+            "normal" => Orientation::Normal,
+            "left-up" => Orientation::LeftUp,
+            "bottom-up" => Orientation::BottomUp,
+            "right-up" => Orientation::RightUp,
+            _ => Orientation::Unknown,
         }
     }
 }
@@ -72,7 +67,7 @@ impl OrientationSensor for ZbusOMeter<'_> {
                 .0
                 .get_property("AccelerometerOrientation")
                 .await?;
-            let orientation: Orientation = reading.try_into()?;
+            let orientation: Orientation = reading.into();
             if self.last != orientation {
                 trace!("changed orientation: {:?} -> {orientation:?}", self.last);
                 self.last = orientation;
