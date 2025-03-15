@@ -82,7 +82,7 @@ impl Config {
                         FingerPattern::new_move(Left, S, Edge::None),
                         FingerPattern::new_move(Left, S, Edge::None),
                     ]),
-                    keys(vec!["alt - j"]), // previous tab
+                    keys(vec!["alt - k"]), // previous tab
                 ),
                 (
                     gestures(vec![
@@ -90,7 +90,7 @@ impl Config {
                         FingerPattern::new_move(Right, S, Edge::None),
                         FingerPattern::new_move(Right, S, Edge::None),
                     ]),
-                    keys(vec!["alt - k"]), // next tab
+                    keys(vec!["alt - j"]), // next tab
                 ),
                 (
                     gestures(vec![FingerPattern::new_move(Left, S, Edge::Right)]),
