@@ -11,9 +11,21 @@ pub type Gesture = Vec<FingerPattern>;
 
 fn detect_edge(coord: &Coordinate) -> Edge {
     if coord.x <= EDGE_THRESHOLD {
-        Edge::Left
+        if coord.y <= EDGE_THRESHOLD {
+            Edge::TopLeft
+        } else if coord.y >= 1000 - EDGE_THRESHOLD {
+            Edge::BottomLeft
+        } else {
+            Edge::Left
+        }
     } else if coord.x >= 1000 - EDGE_THRESHOLD {
-        Edge::Right
+        if coord.y <= EDGE_THRESHOLD {
+            Edge::TopRight
+        } else if coord.y >= 1000 - EDGE_THRESHOLD {
+            Edge::BottomRight
+        } else {
+            Edge::Right
+        }
     } else if coord.y <= EDGE_THRESHOLD {
         Edge::Top
     } else if coord.y >= 1000 - EDGE_THRESHOLD {
@@ -349,6 +361,26 @@ mod test {
             detect_finger_pattern(&make_finger_state_with_movement(10, 500, 100, 0)),
             FingerPattern::new_move(Direction::Right, Size::S, Edge::Left)
         );
+
+        assert_eq!(
+            detect_finger_pattern(&make_finger_state_with_movement(10, 10, 100, 100)),
+            FingerPattern::new_move(Direction::DownRight, Size::S, Edge::TopLeft)
+        );
+
+        assert_eq!(
+            detect_finger_pattern(&make_finger_state_with_movement(990, 10, -100, 100)),
+            FingerPattern::new_move(Direction::DownLeft, Size::S, Edge::TopRight)
+        );
+
+        assert_eq!(
+            detect_finger_pattern(&make_finger_state_with_movement(10, 990, 100, -100)),
+            FingerPattern::new_move(Direction::UpRight, Size::S, Edge::BottomLeft)
+        );
+
+        assert_eq!(
+            detect_finger_pattern(&make_finger_state_with_movement(990, 990, -100, -100)),
+            FingerPattern::new_move(Direction::UpLeft, Size::S, Edge::BottomRight)
+        );
     }
 
     #[test]
@@ -381,19 +413,19 @@ mod test {
     fn test_hold_patterns() {
         assert_eq!(
             detect_finger_pattern(&make_finger_state(0, 0)),
-            FingerPattern::Hold { origin: Edge::Left },
+            FingerPattern::Hold { origin: Edge::TopLeft },
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-9, -20)),
-            FingerPattern::Hold { origin: Edge::Left },
+            FingerPattern::Hold { origin: Edge::TopLeft },
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(13, 0)),
-            FingerPattern::Hold { origin: Edge::Left },
+            FingerPattern::Hold { origin: Edge::TopLeft },
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(20, -20)),
-            FingerPattern::Hold { origin: Edge::Left },
+            FingerPattern::Hold { origin: Edge::TopLeft },
         );
     }
 
@@ -405,23 +437,23 @@ mod test {
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(399, 899)),
-            FingerPattern::new_move(Direction::Down, Size::L, Edge::Left),
+            FingerPattern::new_move(Direction::Down, Size::L, Edge::TopLeft),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(39, 19)),
-            FingerPattern::new_move(Direction::Right, Size::S, Edge::Left),
+            FingerPattern::new_move(Direction::Right, Size::S, Edge::TopLeft),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-39, -19)),
-            FingerPattern::new_move(Direction::Left, Size::S, Edge::Left),
+            FingerPattern::new_move(Direction::Left, Size::S, Edge::TopLeft),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(70, 36)),
-            FingerPattern::new_move(Direction::DownRight, Size::S, Edge::Left),
+            FingerPattern::new_move(Direction::DownRight, Size::S, Edge::TopLeft),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(11, -21)),
-            FingerPattern::new_move(Direction::UpRight, Size::S, Edge::Left),
+            FingerPattern::new_move(Direction::UpRight, Size::S, Edge::TopLeft),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-337, -193)),
@@ -429,11 +461,11 @@ mod test {
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-11, 21)),
-            FingerPattern::new_move(Direction::DownLeft, Size::S, Edge::Left),
+            FingerPattern::new_move(Direction::DownLeft, Size::S, Edge::TopLeft),
         );
         assert_eq!(
             detect_finger_pattern(&make_finger_state(-980, 0)),
-            FingerPattern::new_move(Direction::Left, Size::L, Edge::Right),
+            FingerPattern::new_move(Direction::Left, Size::L, Edge::TopRight),
         );
     }
 }
