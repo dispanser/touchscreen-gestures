@@ -17,6 +17,7 @@
         # Define shared buildInputs and nativeBuildInputs
         buildInputs = with pkgs; [
           libinput
+          systemd.dev
           udev
           xorg.libXrandr
           xorg.libX11
@@ -47,7 +48,9 @@
             cargo-nextest
             cargo-watch
           ];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
         };
+
 
         overlays.default = final: prev: {
           touchscreen-gestures = touchscreen-gestures;
