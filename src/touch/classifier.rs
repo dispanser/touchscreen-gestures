@@ -52,6 +52,8 @@ pub enum Size {
     L,
 }
 
+// Instead of only tracking edges, I want to also track "corner points".
+// So, this enum needs to change to also contain TopLeft, TopRight, etc.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Edge {
     None,
@@ -59,6 +61,47 @@ pub enum Edge {
     Right,
     Bottom,
     Left,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+impl Edge {
+    fn transform(&self, orientation: Orientation) -> Self {
+        match (self, orientation) {
+            (Edge::None, _) => Edge::None,
+            // Normal orientation - no change
+            (e, Orientation::Normal | Orientation::Unknown) => *e,
+            // 90° clockwise
+            (Edge::Left, Orientation::LeftUp) => Edge::Top,
+            (Edge::Top, Orientation::LeftUp) => Edge::Right,
+            (Edge::Right, Orientation::LeftUp) => Edge::Bottom,
+            (Edge::Bottom, Orientation::LeftUp) => Edge::Left,
+            (Edge::TopLeft, Orientation::LeftUp) => Edge::TopRight,
+            (Edge::TopRight, Orientation::LeftUp) => Edge::BottomRight,
+            (Edge::BottomRight, Orientation::LeftUp) => Edge::BottomLeft,
+            (Edge::BottomLeft, Orientation::LeftUp) => Edge::TopLeft,
+            // 90° counter-clockwise
+            (Edge::Left, Orientation::RightUp) => Edge::Bottom,
+            (Edge::Bottom, Orientation::RightUp) => Edge::Right,
+            (Edge::Right, Orientation::RightUp) => Edge::Top,
+            (Edge::Top, Orientation::RightUp) => Edge::Left,
+            (Edge::TopLeft, Orientation::RightUp) => Edge::BottomLeft,
+            (Edge::BottomLeft, Orientation::RightUp) => Edge::BottomRight,
+            (Edge::BottomRight, Orientation::RightUp) => Edge::TopRight,
+            (Edge::TopRight, Orientation::RightUp) => Edge::TopLeft,
+            // 180° rotation
+            (Edge::Left, Orientation::BottomUp) => Edge::Right,
+            (Edge::Right, Orientation::BottomUp) => Edge::Left,
+            (Edge::Top, Orientation::BottomUp) => Edge::Bottom,
+            (Edge::Bottom, Orientation::BottomUp) => Edge::Top,
+            (Edge::TopLeft, Orientation::BottomUp) => Edge::BottomRight,
+            (Edge::TopRight, Orientation::BottomUp) => Edge::BottomLeft,
+            (Edge::BottomRight, Orientation::BottomUp) => Edge::TopLeft,
+            (Edge::BottomLeft, Orientation::BottomUp) => Edge::TopRight,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -83,30 +126,9 @@ impl FingerPattern {
     }
 
     pub fn apply_transformation(self, orientation: Orientation) -> Self {
-        let transform_edge = |edge: Edge| match (edge, orientation) {
-            (Edge::None, _) => Edge::None,
-            // Normal orientation - no change
-            (e, Orientation::Normal | Orientation::Unknown) => e,
-            // 90° clockwise
-            (Edge::Left, Orientation::LeftUp) => Edge::Top,
-            (Edge::Top, Orientation::LeftUp) => Edge::Right,
-            (Edge::Right, Orientation::LeftUp) => Edge::Bottom,
-            (Edge::Bottom, Orientation::LeftUp) => Edge::Left,
-            // 90° counter-clockwise
-            (Edge::Left, Orientation::RightUp) => Edge::Bottom,
-            (Edge::Bottom, Orientation::RightUp) => Edge::Right,
-            (Edge::Right, Orientation::RightUp) => Edge::Top,
-            (Edge::Top, Orientation::RightUp) => Edge::Left,
-            // 180° rotation
-            (Edge::Left, Orientation::BottomUp) => Edge::Right,
-            (Edge::Right, Orientation::BottomUp) => Edge::Left,
-            (Edge::Top, Orientation::BottomUp) => Edge::Bottom,
-            (Edge::Bottom, Orientation::BottomUp) => Edge::Top,
-        };
-
         match self {
             FingerPattern::Hold { origin } => FingerPattern::Hold {
-                origin: transform_edge(origin),
+                origin: origin.transform(orientation),
             },
             FingerPattern::Move {
                 direction,
@@ -122,7 +144,7 @@ impl FingerPattern {
                 FingerPattern::Move {
                     direction: direction.rotate(rotation_steps),
                     size,
-                    origin: transform_edge(origin),
+                    origin: origin.transform(orientation),
                 }
             }
         }
