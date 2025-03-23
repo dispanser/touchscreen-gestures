@@ -49,6 +49,8 @@
             cargo-watch
           ];
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
+          RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
+          SCCACHE_CACHE_SIZE = "20G";
         };
 
 
