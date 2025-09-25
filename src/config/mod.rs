@@ -106,7 +106,7 @@ impl Config {
                         FingerPattern::new_move(Up, S, Edge::Right),
                     ]),
                     script(vec![
-                        "/etc/profiles/per-user/pi/bin/dbus-send",
+                        "/run/current-system/sw/bin/dbus-send",
                         "--type=method_call",
                         "--dest=org.onboard.Onboard",
                         "/org/onboard/Onboard/Keyboard",
