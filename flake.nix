@@ -48,7 +48,7 @@
                 # use Clang as the C compiler for all C libraries.
                 # clangStdenv;
                 # stdenv;
-                pkgs.llvmPackages_14.stdenv;
+                pkgs.llvmPackages.stdenv;
           }
           {
             inputsFrom = [ touchscreen-gestures ];
