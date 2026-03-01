@@ -19,8 +19,6 @@
           libinput
           systemd.dev
           udev
-          libXrandr
-          libX11
         ];
 
         nativeBuildInputs = with pkgs; [

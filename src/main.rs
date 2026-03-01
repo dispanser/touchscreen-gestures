@@ -27,7 +27,7 @@ use touchscreen_gestures::{actions::ActionHandler, error::GesturesError};
 use touchscreen_gestures::{actions::Cmd, error::Result};
 use touchscreen_gestures::{
     touch::{classifier::classify_gesture, TouchState},
-    xrandr_handler::DisplayHandler,
+    rotation_handler::DisplayHandler,
 };
 
 mod config;

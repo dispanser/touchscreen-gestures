@@ -1,7 +1,6 @@
 use std::io;
 
 use thiserror::Error;
-use xrandr::XrandrError;
 
 pub type Result<T, E = GesturesError> = std::result::Result<T, E>;
 
@@ -20,13 +19,6 @@ pub enum GesturesError {
     KeyboardInitFailed {
         #[source]
         source: Box<dyn std::error::Error>,
-    },
-
-    #[error("xrandr error")]
-    XRandError {
-        #[from]
-        #[source]
-        source: XrandrError,
     },
 
     #[error("Invalid key sequence: {0}")]
