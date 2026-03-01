@@ -1,0 +1,37 @@
+poll_interval_ms = 500
+
+[[actions]]
+gesture = ["U,S,B","U,S,B"]
+cmd = "BothScreens"
+
+[[actions]]
+gesture = ["D,S","D,S","D,S","D,S"]
+run = "/run/current-system/sw/bin/light -A 10"
+
+[[actions]]
+gesture = ["U,S","U,S","U,S","U,S"]
+run = "/run/current-system/sw/bin/light -U 10"
+
+[[actions]]
+gesture = ["D,L","D,L","D,L","D,L"]
+run = "/run/current-system/sw/bin/light -A 30"
+
+[[actions]]
+gesture = ["U,L","U,L","U,L","U,L"]
+run = "/run/current-system/sw/bin/light -U 30"
+
+[[actions]]
+gesture = ["R,S,L","R,S,L"]
+run = "/run/current-system/sw/bin/niri msg action focus-column-left"
+
+[[actions]]
+gesture = ["L,S,R","L,S,R"]
+run = "/run/current-system/sw/bin/niri msg action focus-column-right"
+
+[[actions]]
+gesture = ["U,S,B","U,S,B"]
+run = "/run/current-system/sw/bin/niri msg action focus-workspace-down"
+
+[[actions]]
+gesture = ["D,S,T","D,S,T"]
+run = "/run/current-system/sw/bin/niri msg action focus-workspace-up"

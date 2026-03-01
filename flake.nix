@@ -19,8 +19,8 @@
           libinput
           systemd.dev
           udev
-          xorg.libXrandr
-          xorg.libX11
+          libXrandr
+          libX11
         ];
 
         nativeBuildInputs = with pkgs; [
@@ -65,7 +65,7 @@
             SCCACHE_CACHE_SIZE = "20G";
           };
 
-          overlays.default = final: prev: {
+        overlays.default = final: prev: {
           touchscreen-gestures = touchscreen-gestures;
         };
       }

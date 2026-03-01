@@ -3,7 +3,7 @@ use std::io;
 use thiserror::Error;
 use xrandr::XrandrError;
 
-pub type Result<T> = std::result::Result<T, GesturesError>;
+pub type Result<T, E = GesturesError> = std::result::Result<T, E>;
 
 #[derive(Error, Debug)]
 pub enum GesturesError {
@@ -34,15 +34,6 @@ pub enum GesturesError {
 
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
-
-    #[error("Invalid device ID for device: {0}")]
-    InvalidDeviceId(String),
-
-    #[error("Failed to execute xinput command")]
-    XInputFailed {
-        #[source]
-        source: Box<dyn std::error::Error>,
-    },
 
     #[error(transparent)]
     Io(#[from] std::io::Error),

@@ -6,7 +6,6 @@ use std::{
         unix::fs::OpenOptionsExt as _,
     },
     path::Path,
-    process::Command,
     sync::mpsc::TryRecvError,
     time::Duration,
 };
@@ -33,6 +32,7 @@ use touchscreen_gestures::{
 
 mod config;
 
+const CONFIG_PATH: &str = "/home/pi/src/github/dispanser/touchscreen-gestures/conf/example.toml";
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -43,7 +43,12 @@ async fn main() -> Result<()> {
     match find_gesture_device(&mut interface) {
         Ok(device) => {
             log::info!("detected touch-capable device: {device:?}");
-            let mut eh = EventHandler::new(device, Config::my_config(500)).await?;
+            // let mut eh = EventHandler::new(device, Config::my_config(500)).await?;
+            let mut eh = EventHandler::new(
+                device,
+                Config::load_from_path(Path::new(CONFIG_PATH)).unwrap(),
+            )
+            .await?;
             eh.main_loop(&mut interface).await?;
         }
         Err(err) => {
@@ -53,34 +58,13 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn query_device_by_name(name: String) -> Result<TouchDevice> {
-    let output = Command::new("/run/current-system/sw/bin/xinput")
-        .args(["list", "--id-only", &name])
-        .output()?;
-
-    log::debug!(
-        "std out for querying device id: \n{}",
-        String::from_utf8_lossy(output.stdout.as_slice())
-    );
-    if !output.status.success() {
-        return Err(GesturesError::DeviceNotFound(name));
-    }
-
-    let id = String::from_utf8(output.stdout)?
-        .trim()
-        .parse::<u32>()
-        .map_err(|_| GesturesError::InvalidDeviceId(name.clone()))?;
-
-    Ok(TouchDevice { name, id })
-}
-
 fn find_gesture_device(input: &mut Libinput) -> Result<TouchDevice> {
     input.dispatch().unwrap();
     for event in input.clone() {
         if let Event::Device(e) = event {
             if e.device().has_capability(DeviceCapability::Touch) {
                 let name = e.device().name().to_owned();
-                return query_device_by_name(name);
+                return Ok(TouchDevice { name });
             }
         }
         input.dispatch().unwrap();
@@ -107,13 +91,13 @@ impl LibinputInterface for Interface {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct TouchDevice {
-    #[allow(dead_code)]
     name: String,
-    id: u32,
 }
 
 struct EventHandler {
+    #[allow(dead_code)]
     device: TouchDevice,
     touch_state: TouchState,
     action_handler: ActionHandler,
@@ -197,9 +181,6 @@ impl EventHandler {
                 self.orientation
             );
             self.display_handler.auto(&orientation)?;
-            Command::new("/run/current-system/sw/bin/xinput")
-                .args(["map-to-output", &self.device.id.to_string(), "eDP-1"])
-                .spawn()?;
             self.orientation = orientation;
         }
         Ok(())
