@@ -6,7 +6,7 @@ repository = "https://github.com/dispanser/touchscreen-gestures"
 keywords = ["touchscreen", "gestures", "libinput", "multitouch", "linux"]
 
 [dependencies]
-clap = { version = "4.4", features = ["derive"] }
+argh = "0.1"
 ctrlc = { version = "3.4.5", features = ["termination"] }
 evdev = { git = "https://github.com/emberian/evdev", branch = "main" }
 input = "0.9.1"

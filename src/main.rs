@@ -5,13 +5,14 @@ use std::{
         fd::{AsFd, IntoRawFd as _, OwnedFd},
         unix::fs::OpenOptionsExt as _,
     },
-    path::Path,
+    path::{Path, PathBuf},
     sync::mpsc::TryRecvError,
     time::Duration,
 };
 
 use std::sync::mpsc::{self, Receiver};
 
+use argh::FromArgs;
 use config::Config;
 use input::{
     event::{EventTrait as _, TouchEvent},
@@ -32,9 +33,16 @@ use touchscreen_gestures::{
 
 mod config;
 
-const CONFIG_PATH: &str = "/home/pi/src/github/dispanser/touchscreen-gestures/conf/example.toml";
+#[derive(FromArgs, PartialEq, Debug)]
+/// Touchscreen gesture recognition daemon
+struct Args {
+    /// path to the TOML configuration file
+    #[argh(option)]
+    config: PathBuf,
+}
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args: Args = argh::from_env();
     pretty_env_logger::init();
     let mut interface = input::Libinput::new_with_udev(Interface);
     interface
@@ -43,12 +51,8 @@ async fn main() -> Result<()> {
     match find_gesture_device(&mut interface) {
         Ok(device) => {
             log::info!("detected touch-capable device: {device:?}");
-            // let mut eh = EventHandler::new(device, Config::my_config(500)).await?;
-            let mut eh = EventHandler::new(
-                device,
-                Config::load_from_path(Path::new(CONFIG_PATH)).unwrap(),
-            )
-            .await?;
+            let mut eh = EventHandler::new(device, Config::load_from_path(&args.config).unwrap())
+                .await?;
             eh.main_loop(&mut interface).await?;
         }
         Err(err) => {
