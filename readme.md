@@ -2,8 +2,7 @@
 
 Allows you to define various gestures on a touchscreen to trigger actions.
 
-This is similar to and inspired by
-[lisgd](https://github.com/jjsullivan5196/lisgd), but supports a wider range of
+This is similar to and inspired by [lisgd](https://github.com/jjsullivan5196/lisgd), but supports a wider range of
 gestures. It's also exposed as a crate (library) in addition to an executable
 so it can be embedded into windoer managers or similar programs.
 
@@ -12,7 +11,7 @@ so it can be embedded into windoer managers or similar programs.
 - [x] create sequences of keypresses
 - [x] run commands
 - [x] a set of hard-coded commands that trigger some hard-coded internal actions
-    - this is a workaround for the lack of an IPC interface to control the internal state
+    - this is a workaround for the lack of an IPC interface to control the internal state20
 
 ## CLI Arguments
 
@@ -80,4 +79,67 @@ Examples:
     - e.g. for brightness / volume controls
     - this is somewhat at odds with the multi-path gesture above, as distinguishing between (`Right` -> `Down`) and rotation is hard
 - dynamic dials: changing scales like volume / brightness dynamically while sliding
+
+## NixOS / Home Manager Integration
+
+### Using the Home Manager Module
+
+Add the flake to your Home Manager configuration and enable the module:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    touchscreen-gestures.url = "github:dispanser/touchscreen-gestures";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  outputs = { self, nixpkgs, home-manager, touchscreen-gestures }:
+    home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      modules = [
+        touchscreen-gestures.homeManagerModules.default
+        {
+          programs.touchscreen-gestures = {
+            enable = true;
+            package = touchscreen-gestures.packages.x86_64-linux.default;
+            config = ./touchscreen-gestures.toml;
+          };
+        }
+      ];
+    };
+}
+```
+
+### Using in NixOS Configuration
+
+For a specific user in your NixOS configuration:
+
+```nix
+{ config, pkgs, ... }:
+let
+  touchscreen-gestures = import (fetchGit {
+    url = "https://github.com/dispanser/touchscreen-gestures.git";
+    rev = "main";
+  }) { };
+in
+{
+  imports = [ touchscreen-gestures.homeManagerModules.default ];
+
+  home-manager.users.yourusername = {
+    programs.touchscreen-gestures = {
+      enable = true;
+      package = touchscreen-gestures.packages.${pkgs.system}.default;
+      config = ./path/to/config.toml;
+    };
+  };
+}
+```
+
+This will:
+- Create a user systemd service `touchscreen-gestures.service`
+- Start it automatically on login
+- Restart on failure with a 5-second delay
+- Set `RUST_LOG=info` for logging
 
